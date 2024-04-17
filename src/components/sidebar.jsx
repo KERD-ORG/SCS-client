@@ -22,7 +22,7 @@ function Sidebar() {
 
   return (
     <nav className="bg-gray-100/30 flex flex-col shadow-xl h-screen w-20 hover:w-80 group p-4 transition-[width] ease-in overflow-hidden">
-      <div className="p-2 group-hover:py-4 rounded group-hover:shadow flex items-center group-hover:bg-white">
+      <div className="p-2 group-hover:py-4 overflow-hidden rounded group-hover:shadow flex items-center group-hover:bg-white">
         <Popover>
           <PopoverTrigger>
             <div className="flex items-center">
@@ -38,10 +38,10 @@ function Sidebar() {
                 </AvatarFallback>
               </Avatar>
               <div
-                className={`hidden group-hover:flex flex-col items-start ml-3 ${open_sans.className} `}
+                className={`min-w-[200px] ml-4 text-left ${open_sans.className} `}
               >
-                <span className={` font-medium`}>Ahnaf Hasan Shifat</span>
-                <span className="text-xs text-gray-700">test@test.com</span>
+                <h3 className={`font-medium`}>Ahnaf Hasan Shifat</h3>
+                <h5 className="text-xs text-gray-700">test@test.com</h5>
               </div>
             </div>
           </PopoverTrigger>

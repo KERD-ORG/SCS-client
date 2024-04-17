@@ -24,12 +24,13 @@ import { z } from "zod";
 
 const INPUTS = [
   { name: "name", label: "Name", placeholder: "Name" },
+  { name: "campus", label: "Campus" },
+  { name: "college", label: "College" },
   {
     name: "web_address",
     label: "Web Address",
     placeholder: "http://example.com",
   },
-  { name: "campus", label: "Campus" },
   { name: "address", label: "Address", placeholder: "Enter address..." },
   { name: "statement", label: "Statement", placeholder: "Enter statement..." },
   { name: "status", label: "Status" },
@@ -42,7 +43,8 @@ const formSchema = z.object({
   web_address: z.string({ required_error: "Url is required" }).url({
     message: "Invalid url",
   }),
-  campus: z.string({ required_error: "Country is required" }),
+  campus: z.string({ required_error: "Campus is required" }),
+  college: z.string({ required_error: "College is required" }),
   address: z
     .string({ required_error: "Address is required" })
     .min(2, { message: "Must be 2 or more character long" }),
@@ -52,7 +54,7 @@ const formSchema = z.object({
   status: z.string({ required_error: "State is required" }),
 });
 
-function CollegeForm() {
+function DepartmentForm() {
   const form = useForm({ resolver: zodResolver(formSchema) });
 
   function onSubmit(values) {
@@ -103,6 +105,21 @@ function renderFormControl(field, name, placeholder = "") {
         </FormControl>
       );
 
+    case "college":
+      return (
+        <Select onValueChange={field.onChange} defaultValue={field.value}>
+          <FormControl>
+            <SelectTrigger>
+              <SelectValue placeholder="Select a college" />
+            </SelectTrigger>
+          </FormControl>
+          <SelectContent>
+            <SelectItem value="active">College 1</SelectItem>
+            <SelectItem value="not-active">College 2</SelectItem>
+          </SelectContent>
+        </Select>
+      );
+
     case "campus":
       return (
         <Select onValueChange={field.onChange} defaultValue={field.value}>
@@ -149,4 +166,4 @@ function renderFormControl(field, name, placeholder = "") {
   }
 }
 
-export default CollegeForm;
+export default DepartmentForm;

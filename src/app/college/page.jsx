@@ -1,5 +1,5 @@
 import DataTable from "@/components/DataTable/DataTable";
-import UniversityForm from "@/components/UniversityForm";
+import CollegeForm from "@/components/Forms/CollegeForm";
 import { Button } from "@/components/ui/button";
 import { open_sans } from "@/lib/fonts";
 import { PlusCircleIcon } from "lucide-react";
@@ -10,9 +10,8 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "../../components/ui/sheet";
-import CollegeForm from "@/components/CollegeForm";
 
-function University() {
+function College() {
   return (
     <div className="bg-[whitesmoke] w-full h-full p-8">
       <div className="flex items-center justify-between">
@@ -48,4 +47,4 @@ function University() {
   );
 }
 
-export default University;
+export default College;

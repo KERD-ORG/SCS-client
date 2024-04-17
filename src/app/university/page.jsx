@@ -1,3 +1,4 @@
+import DataTable from "@/components/DataTable/DataTable";
 import UniversityForm from "@/components/UniversityForm";
 import { Button } from "@/components/ui/button";
 import { open_sans } from "@/lib/fonts";
@@ -37,6 +38,10 @@ function University() {
             </div>
           </SheetContent>
         </Sheet>
+      </div>
+
+      <div>
+        <DataTable />
       </div>
     </div>
   );

@@ -15,18 +15,9 @@ import {
   getPaginationRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { MoreHorizontal } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { inter, open_sans } from "@/lib/fonts";
+import { EyeOpenIcon, Pencil1Icon, TrashIcon } from "@radix-ui/react-icons";
 import Image from "next/image";
 import { useState } from "react";
 import { Input } from "../ui/input";
@@ -114,28 +105,15 @@ const columns = [
   },
   {
     id: "actions",
+    header: 'Actions',
     cell: ({ row }) => {
       const payment = row.original;
       return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
-              <span className="sr-only">Open menu</span>
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem
-              onClick={() => navigator.clipboard.writeText(payment.id)}
-            >
-              Copy payment ID
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>View customer</DropdownMenuItem>
-            <DropdownMenuItem>View payment details</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="flex items-center gap-1">
+          <EyeOpenIcon className="w-6 h-6 text-gray-700 hover:text-gray-900 cursor-pointer" />
+          <Pencil1Icon className="w-6 h-6 text-gray-700 hover:text-gray-900 cursor-pointer" />
+          <TrashIcon className="w-6 h-6 text-red-500 hover:text-red-600 cursor-pointer" />
+        </div>
       );
     },
   },
@@ -182,7 +160,10 @@ function DataTable() {
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {
                   return (
-                    <TableHead key={header.id} className={`font-bold ${open_sans.className}`}>
+                    <TableHead
+                      key={header.id}
+                      className={`font-bold ${open_sans.className}`}
+                    >
                       {header.isPlaceholder
                         ? null
                         : flexRender(
@@ -203,7 +184,10 @@ function DataTable() {
                   data-state={row.getIsSelected() && "selected"}
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id} className={`capitalize ${inter.className} font-medium text-gray-900`}>
+                    <TableCell
+                      key={cell.id}
+                      className={`capitalize ${inter.className} font-medium text-gray-900`}
+                    >
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext()

@@ -8,7 +8,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { open_sans } from "@/lib/fonts";
-import { Building2, LogOut, User } from "lucide-react";
+import { Building2, LogOut, User, User2 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AiFillFund } from "react-icons/ai";
@@ -125,6 +125,19 @@ function Sidebar() {
           >
             <Building2 size={25} />
             <span className="ml-6">Campus</span>
+          </Link>
+        </li>
+        <li className="w-full flex">
+          <Link
+            className={`flex w-full min-w-[300px] p-3 px-4 items-center text-lg ${
+              pathname === "/faculty"
+                ? "text-white font-semibold rounded bg-violet-500"
+                : "text-gray-500 "
+            }`}
+            href={"/faculty"}
+          >
+            <User2 size={25} />
+            <span className="ml-6">Faculty Member</span>
           </Link>
         </li>
       </ul>

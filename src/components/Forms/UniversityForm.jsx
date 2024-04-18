@@ -50,7 +50,7 @@ const formSchema = z.object({
   status: z.string({ required_error: "State is required" }),
 });
 
-function UniversityForm() {
+function UniversityForm({ onSheetOpenChange }) {
   const form = useForm({ resolver: zodResolver(formSchema) });
 
   function onSubmit(values) {
@@ -79,9 +79,18 @@ function UniversityForm() {
             <FormLabel>Logo</FormLabel>
             <Input type="file" />
           </FormItem>
-          <Button type="submit" variant="secondary" size="lg">
-            Submit
-          </Button>
+          <div className="w-full flex items-center justify-end gap-4">
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={() => onSheetOpenChange(false)}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" variant="secondary" size="lg">
+              Submit
+            </Button>
+          </div>
         </form>
       </Form>
     </div>

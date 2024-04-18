@@ -1,3 +1,5 @@
+"use client"
+
 import DataTable from "@/components/DataTable/DataTable";
 import CollegeForm from "@/components/Forms/CollegeForm";
 import { Button } from "@/components/ui/button";
@@ -10,8 +12,10 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "../../components/ui/sheet";
+import { useState } from "react";
 
 function College() {
+  const [sheetOpen, setSheetOpen] = useState(false);
   return (
     <div className="bg-[whitesmoke] w-full h-full p-8">
       <div className="flex items-center justify-between">
@@ -20,21 +24,21 @@ function College() {
         >
           College
         </h1>
-        <Sheet>
+        <Sheet open={sheetOpen}  onClose={() => setSheetOpen(false)} onOpenChange={setSheetOpen}>
           <SheetTrigger asChild>
             <Button variant="primary">
               <PlusCircleIcon />
               <span className="ml-2">Add new college</span>
             </Button>
           </SheetTrigger>
-          <SheetContent className="overflow-y-auto w-[450px]">
+          <SheetContent className="overflow-y-auto h-screen" side="top">
             <SheetHeader>
-              <SheetTitle className="text-xl border-b pb-3">
+              <SheetTitle className="text-2xl border-b pb-3">
                 Add new college
               </SheetTitle>
             </SheetHeader>
             <div className="w-full">
-              <CollegeForm />
+              <CollegeForm onSheetOpenChange={setSheetOpen} />
             </div>
           </SheetContent>
         </Sheet>

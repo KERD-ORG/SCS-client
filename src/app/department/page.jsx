@@ -1,8 +1,11 @@
+"use client";
+
 import DataTable from "@/components/DataTable/DataTable";
 import DepartmentForm from "@/components/Forms/DepartmentForm";
 import { Button } from "@/components/ui/button";
 import { open_sans } from "@/lib/fonts";
 import { PlusCircleIcon } from "lucide-react";
+import { useState } from "react";
 import {
   Sheet,
   SheetContent,
@@ -12,6 +15,7 @@ import {
 } from "../../components/ui/sheet";
 
 function Department() {
+  const [sheetOpen, setSheetOpen] = useState(false);
   return (
     <div className="bg-[whitesmoke] w-full h-full p-8">
       <div className="flex items-center justify-between">
@@ -20,21 +24,25 @@ function Department() {
         >
           Department
         </h1>
-        <Sheet>
+        <Sheet
+          open={sheetOpen}
+          onClose={() => setSheetOpen(false)}
+          onOpenChange={setSheetOpen}
+        >
           <SheetTrigger asChild>
             <Button variant="primary">
               <PlusCircleIcon />
               <span className="ml-2">Add new department</span>
             </Button>
           </SheetTrigger>
-          <SheetContent className="overflow-y-auto w-[450px]">
+          <SheetContent side="top" className="overflow-y-auto h-screen">
             <SheetHeader>
-              <SheetTitle className="text-xl border-b pb-3">
+              <SheetTitle className="text-2xl border-b pb-3">
                 Add new department
               </SheetTitle>
             </SheetHeader>
             <div className="w-full">
-              <DepartmentForm />
+              <DepartmentForm onSheetOpenChange={setSheetOpen} />
             </div>
           </SheetContent>
         </Sheet>

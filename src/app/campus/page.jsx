@@ -14,6 +14,45 @@ import {
 } from "../../components/ui/sheet";
 import { useState } from "react";
 
+const data = [
+  {
+    id: 1,
+    name: "Environmental Science test",
+    campus: "Idaho falls1",
+    college: "College of natural resources",
+    operator: "Ahnaf Hasan",
+    status: "Active",
+    logo: "https://github.com/shadcn.png",
+  },
+  {
+    id: 2,
+    name: "Environmental Science test",
+    campus: "Idaho falls2",
+    college: "College of natural resources",
+    operator: "Ahnaf Hasan",
+    status: "active",
+    logo: "",
+  },
+  {
+    id: 3,
+    name: "Environmental Science test",
+    campus: "Idaho falls3",
+    college: "College of natural resources",
+    operator: "Ahnaf Hasan",
+    status: "not active",
+    logo: "https://github.com/shadcn.png",
+  },
+  {
+    id: 4,
+    name: "Environmental Science test",
+    campus: "Idaho falls4",
+    college: "College of natural resources",
+    operator: "Ahnaf Hasan",
+    status: "active",
+    logo: "",
+  },
+];
+
 function Campus() {
 
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -32,7 +71,7 @@ function Campus() {
               <span className="ml-2">Add new campus</span>
             </Button>
           </SheetTrigger>
-          <SheetContent className="overflow-y-auto h-screen" side="top">
+          <SheetContent className="overflow-y-auto h-screen" side="bottom">
             <SheetHeader>
               <SheetTitle className="text-2xl border-b pb-3">
                 Add new campus
@@ -46,7 +85,7 @@ function Campus() {
       </div>
 
       <div>
-        <DataTable />
+        <DataTable data={data} />
       </div>
     </div>
   );

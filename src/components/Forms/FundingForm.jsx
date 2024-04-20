@@ -31,7 +31,10 @@ const INPUTS = [
   { name: "start_date", label: "Start Date", placeholder: "Pick a date" },
   { name: "end_date", label: "End Date", placeholder: "Pick a date" },
   { name: "funding_type", label: "Funding Type" },
+  { name: "originator", label: "Originator of Funding" },
+  { name: "benefits", label: "Benefits under Funding" },
   { name: "position", label: "Number Of Position" },
+  { name: "amount", label: "Amount (Yearly)" },
   { name: "status", label: "Status" },
   { name: "campus", label: "Campus" },
   { name: "college", label: "College" },
@@ -46,6 +49,8 @@ const formSchema = z.object({
   campus: z.string({ required_error: "Campus is required" }),
   college: z.string({ required_error: "College is required" }),
   department: z.string({ required_error: "Department is required" }),
+  originator: z.string({ required_error: "Originator of Funding is required" }),
+  benefits: z.string({ required_error: "Benefits under Funding is required" }),
   statement: z
     .string({ required_error: "Statement is required" })
     .min(2, { message: "Must be 2 or more character long" }),
@@ -54,6 +59,7 @@ const formSchema = z.object({
   position: z
     .number({ required_error: "Number of position is required" })
     .min(0),
+  amount: z.number({ required_error: "Amount is required" }).min(0),
   start_date: z.date({ required_error: "Start Date is required" }),
   end_date: z.date({ required_error: "End Date is required" }),
 });
@@ -68,7 +74,10 @@ function FundingForm({ onSheetOpenChange }) {
   return (
     <div className="mb-1.5 mt-6">
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-2 gap-8">
+        <form
+          onSubmit={form.handleSubmit(onSubmit)}
+          className="grid grid-cols-2 gap-8"
+        >
           {INPUTS.map((input, ind) => (
             <FormField
               control={form.control}
@@ -111,7 +120,14 @@ function renderFormControl(field, name, placeholder = "") {
         </FormControl>
       );
 
-      case "position":
+    case "position":
+      return (
+        <FormControl>
+          <Input placeholder={placeholder} {...field} type="number" />
+        </FormControl>
+      );
+
+    case "amount":
       return (
         <FormControl>
           <Input placeholder={placeholder} {...field} type="number" />
@@ -148,7 +164,7 @@ function renderFormControl(field, name, placeholder = "") {
                 date > new Date() || date < new Date("1900-01-01")
               }
               initialFocus
-              className={'w-full'}
+              className={"w-full"}
             />
           </PopoverContent>
         </Popover>
@@ -188,8 +204,6 @@ function renderFormControl(field, name, placeholder = "") {
           </PopoverContent>
         </Popover>
       );
-
-
 
     case "college":
       return (
@@ -232,6 +246,41 @@ function renderFormControl(field, name, placeholder = "") {
           <SelectContent>
             <SelectItem value="active">Department 1</SelectItem>
             <SelectItem value="not-active">Department 2</SelectItem>
+          </SelectContent>
+        </Select>
+      );
+
+    case "originator":
+      return (
+        <Select onValueChange={field.onChange} defaultValue={field.value}>
+          <FormControl>
+            <SelectTrigger>
+              <SelectValue placeholder="Select originator of funding" />
+            </SelectTrigger>
+          </FormControl>
+          <SelectContent>
+            <SelectItem value="organization">Organization</SelectItem>
+            <SelectItem value="professors">Professors</SelectItem>
+            <SelectItem value="other">Anonymous or others</SelectItem>
+          </SelectContent>
+        </Select>
+      );
+
+    case "benefits":
+      return (
+        <Select onValueChange={field.onChange} defaultValue={field.value}>
+          <FormControl>
+            <SelectTrigger>
+              <SelectValue placeholder="Select benefits under funding" />
+            </SelectTrigger>
+          </FormControl>
+          <SelectContent>
+            <SelectItem value="stipend">Stipend</SelectItem>
+            <SelectItem value="medical/health">
+              Medical/Health Insurance
+            </SelectItem>
+            <SelectItem value="dental">Dental Insurance</SelectItem>
+            <SelectItem value="dorm">Dorm</SelectItem>
           </SelectContent>
         </Select>
       );

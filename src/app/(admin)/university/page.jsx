@@ -1,7 +1,7 @@
 "use client";
 
 import DataTable from "@/components/DataTable/DataTable";
-import FundingForm from "@/components/Forms/FundingForm";
+import UniversityForm from "@/components/Forms/UniversityForm";
 import { Button } from "@/components/ui/button";
 import { open_sans } from "@/lib/fonts";
 import { PlusCircleIcon } from "lucide-react";
@@ -12,8 +12,7 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from "../../components/ui/sheet";
-import FacultyMemberForm from "@/components/Forms/FacultyMemberForm";
+} from "../../../components/ui/sheet";
 
 const data = [
   {
@@ -54,7 +53,7 @@ const data = [
   },
 ];
 
-function Faculty() {
+function University() {
   const [sheetOpen, setSheetOpen] = useState(false);
   return (
     <div className="bg-[whitesmoke] w-full h-full p-8">
@@ -62,7 +61,7 @@ function Faculty() {
         <h1
           className={`text-4xl ${open_sans.className} font-bold text-gray-700`}
         >
-          Faculty Member
+          University
         </h1>
         <Sheet
           open={sheetOpen}
@@ -72,17 +71,17 @@ function Faculty() {
           <SheetTrigger asChild>
             <Button variant="primary">
               <PlusCircleIcon />
-              <span className="ml-2">Add new faculty member</span>
+              <span className="ml-2">Add new university</span>
             </Button>
           </SheetTrigger>
-          <SheetContent side="bottom" className="overflow-y-auto h-screen">
+          <SheetContent side="bottom" className="!h-screen !overflow-y-auto">
             <SheetHeader>
               <SheetTitle className="text-2xl border-b pb-3">
-                Add new funding
+                Add new university
               </SheetTitle>
             </SheetHeader>
-            <div className="w-full">
-              <FacultyMemberForm onSheetOpenChange={setSheetOpen} />
+            <div className="w-full ">
+              <UniversityForm onSheetOpenChange={setSheetOpen} />
             </div>
           </SheetContent>
         </Sheet>
@@ -95,4 +94,4 @@ function Faculty() {
   );
 }
 
-export default Faculty;
+export default University;

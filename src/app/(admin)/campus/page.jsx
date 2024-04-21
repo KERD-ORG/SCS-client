@@ -1,18 +1,18 @@
-"use client"
+"use client";
 
 import DataTable from "@/components/DataTable/DataTable";
 import CampusForm from "@/components/Forms/CampusForm";
 import { Button } from "@/components/ui/button";
 import { open_sans } from "@/lib/fonts";
 import { PlusCircleIcon } from "lucide-react";
+import { useState } from "react";
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from "../../components/ui/sheet";
-import { useState } from "react";
+} from "../../../components/ui/sheet";
 
 const data = [
   {
@@ -54,7 +54,6 @@ const data = [
 ];
 
 function Campus() {
-
   const [sheetOpen, setSheetOpen] = useState(false);
   return (
     <div className="bg-[whitesmoke] w-full h-full p-8">
@@ -64,7 +63,11 @@ function Campus() {
         >
           Campus
         </h1>
-        <Sheet open={sheetOpen}  onClose={() => setSheetOpen(false)} onOpenChange={setSheetOpen}>
+        <Sheet
+          open={sheetOpen}
+          onClose={() => setSheetOpen(false)}
+          onOpenChange={setSheetOpen}
+        >
           <SheetTrigger asChild>
             <Button variant="primary">
               <PlusCircleIcon />

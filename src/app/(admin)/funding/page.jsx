@@ -1,18 +1,18 @@
-"use client"
+"use client";
 
 import DataTable from "@/components/DataTable/DataTable";
-import CollegeForm from "@/components/Forms/CollegeForm";
+import FundingForm from "@/components/Forms/FundingForm";
 import { Button } from "@/components/ui/button";
 import { open_sans } from "@/lib/fonts";
 import { PlusCircleIcon } from "lucide-react";
+import { useState } from "react";
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from "../../components/ui/sheet";
-import { useState } from "react";
+} from "../../../components/ui/sheet";
 
 const data = [
   {
@@ -53,7 +53,7 @@ const data = [
   },
 ];
 
-function College() {
+function Funding() {
   const [sheetOpen, setSheetOpen] = useState(false);
   return (
     <div className="bg-[whitesmoke] w-full h-full p-8">
@@ -61,23 +61,27 @@ function College() {
         <h1
           className={`text-4xl ${open_sans.className} font-bold text-gray-700`}
         >
-          College
+          Funding
         </h1>
-        <Sheet open={sheetOpen}  onClose={() => setSheetOpen(false)} onOpenChange={setSheetOpen}>
+        <Sheet
+          open={sheetOpen}
+          onClose={() => setSheetOpen(false)}
+          onOpenChange={setSheetOpen}
+        >
           <SheetTrigger asChild>
             <Button variant="primary">
               <PlusCircleIcon />
-              <span className="ml-2">Add new college</span>
+              <span className="ml-2">Add new funding</span>
             </Button>
           </SheetTrigger>
-          <SheetContent className="overflow-y-auto h-screen" side="bottom">
+          <SheetContent side="bottom" className="overflow-y-auto h-screen">
             <SheetHeader>
               <SheetTitle className="text-2xl border-b pb-3">
-                Add new college
+                Add new funding
               </SheetTitle>
             </SheetHeader>
             <div className="w-full">
-              <CollegeForm onSheetOpenChange={setSheetOpen} />
+              <FundingForm onSheetOpenChange={setSheetOpen} />
             </div>
           </SheetContent>
         </Sheet>
@@ -90,4 +94,4 @@ function College() {
   );
 }
 
-export default College;
+export default Funding;

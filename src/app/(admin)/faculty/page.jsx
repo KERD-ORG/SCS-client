@@ -1,7 +1,7 @@
 "use client";
 
 import DataTable from "@/components/DataTable/DataTable";
-import FundingForm from "@/components/Forms/FundingForm";
+import FacultyMemberForm from "@/components/Forms/FacultyMemberForm";
 import { Button } from "@/components/ui/button";
 import { open_sans } from "@/lib/fonts";
 import { PlusCircleIcon } from "lucide-react";
@@ -12,7 +12,7 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from "../../components/ui/sheet";
+} from "../../../components/ui/sheet";
 
 const data = [
   {
@@ -53,7 +53,7 @@ const data = [
   },
 ];
 
-function Funding() {
+function Faculty() {
   const [sheetOpen, setSheetOpen] = useState(false);
   return (
     <div className="bg-[whitesmoke] w-full h-full p-8">
@@ -61,7 +61,7 @@ function Funding() {
         <h1
           className={`text-4xl ${open_sans.className} font-bold text-gray-700`}
         >
-          Funding
+          Faculty Member
         </h1>
         <Sheet
           open={sheetOpen}
@@ -71,7 +71,7 @@ function Funding() {
           <SheetTrigger asChild>
             <Button variant="primary">
               <PlusCircleIcon />
-              <span className="ml-2">Add new funding</span>
+              <span className="ml-2">Add new faculty member</span>
             </Button>
           </SheetTrigger>
           <SheetContent side="bottom" className="overflow-y-auto h-screen">
@@ -81,7 +81,7 @@ function Funding() {
               </SheetTitle>
             </SheetHeader>
             <div className="w-full">
-              <FundingForm onSheetOpenChange={setSheetOpen} />
+              <FacultyMemberForm onSheetOpenChange={setSheetOpen} />
             </div>
           </SheetContent>
         </Sheet>
@@ -94,4 +94,4 @@ function Funding() {
   );
 }
 
-export default Funding;
+export default Faculty;

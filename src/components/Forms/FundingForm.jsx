@@ -64,7 +64,7 @@ const formSchema = z.object({
   end_date: z.date({ required_error: "End Date is required" }),
 });
 
-function FundingForm({ onSheetOpenChange }) {
+function FundingForm({ onDialogOpenChange }) {
   const form = useForm({ resolver: zodResolver(formSchema) });
 
   function onSubmit(values) {
@@ -97,7 +97,7 @@ function FundingForm({ onSheetOpenChange }) {
             <Button
               variant="outline"
               size="lg"
-              onClick={() => onSheetOpenChange(false)}
+              onClick={() => onDialogOpenChange(false)}
             >
               Cancel
             </Button>

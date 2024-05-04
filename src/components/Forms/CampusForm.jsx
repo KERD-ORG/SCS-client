@@ -23,7 +23,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 const INPUTS = [
-  { name: "name", label: "Name", placeholder: "Name" },
+  { name: "name", label: "Campus Name", placeholder: "Name" },
   {
     name: "web_address",
     label: "Web Address",
@@ -32,8 +32,8 @@ const INPUTS = [
   { name: "country", label: "Country", placeholder: "USA" },
   { name: "state", label: "State", placeholder: "New York" },
   { name: "city", label: "City", placeholder: "City" },
-  { name: "statement", label: "Statement", placeholder: "Enter statement..." },
   { name: "status", label: "Status" },
+  { name: "statement", label: "Statement", placeholder: "Enter statement..." },
 ];
 
 const formSchema = z.object({
@@ -52,7 +52,7 @@ const formSchema = z.object({
   status: z.string({ required_error: "State is required" }),
 });
 
-function CampusForm({ onSheetOpenChange }) {
+function CampusForm({ onDialogOpenChange }) {
   const form = useForm({ resolver: zodResolver(formSchema) });
 
   function onSubmit(values) {
@@ -62,7 +62,10 @@ function CampusForm({ onSheetOpenChange }) {
   return (
     <div className="mb-1.5 mt-6">
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+        <form
+          onSubmit={form.handleSubmit(onSubmit)}
+          className="grid grid-cols-2 gap-8"
+        >
           {INPUTS.map((input, ind) => (
             <FormField
               control={form.control}
@@ -78,11 +81,11 @@ function CampusForm({ onSheetOpenChange }) {
             />
           ))}
 
-          <div className="w-full flex items-center justify-end gap-4">
+          <div className="w-full col-span-2 flex items-center justify-end gap-4">
             <Button
               variant="outline"
               size="lg"
-              onClick={() => onSheetOpenChange(false)}
+              onClick={() => onDialogOpenChange(false)}
             >
               Cancel
             </Button>

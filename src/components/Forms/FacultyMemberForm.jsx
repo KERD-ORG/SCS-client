@@ -89,7 +89,7 @@ const formSchema = z
     path: ["confirm_password"], // path of error
   });
 
-function FacultyMemberForm({ onSheetOpenChange }) {
+function FacultyMemberForm({ onDialogOpenChange }) {
   const form = useForm({ resolver: zodResolver(formSchema) });
 
   function onSubmit(values) {
@@ -122,7 +122,7 @@ function FacultyMemberForm({ onSheetOpenChange }) {
             <Button
               variant="outline"
               size="lg"
-              onClick={() => onSheetOpenChange(false)}
+              onClick={() => onDialogOpenChange(false)}
             >
               Cancel
             </Button>

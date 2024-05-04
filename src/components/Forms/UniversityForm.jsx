@@ -23,7 +23,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 const INPUTS = [
-  { name: "name", label: "Name", placeholder: "Name" },
+  { name: "name", label: "University Name", placeholder: "Name" },
   {
     name: "web_address",
     label: "Web Address",
@@ -31,8 +31,9 @@ const INPUTS = [
   },
   { name: "country", label: "Country", placeholder: "USA" },
   { name: "state", label: "State", placeholder: "New York" },
-  { name: "statement", label: "Statement", placeholder: "statement" },
   { name: "status", label: "Status" },
+  { name: "statement", label: "Statement", placeholder: "statement" },
+  
 ];
 
 const formSchema = z.object({
@@ -50,7 +51,7 @@ const formSchema = z.object({
   status: z.string({ required_error: "State is required" }),
 });
 
-function UniversityForm({ onSheetOpenChange }) {
+function UniversityForm({ onDialogOpenChange }) {
   const form = useForm({ resolver: zodResolver(formSchema) });
 
   function onSubmit(values) {
@@ -60,8 +61,8 @@ function UniversityForm({ onSheetOpenChange }) {
   return (
     <div className="mb-1.5 mt-6">
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-          {INPUTS.map((input, ind) => (
+        <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-2 gap-8">
+          {INPUTS.slice(0, 2).map((input, ind) => (
             <FormField
               control={form.control}
               name={input.name}
@@ -79,11 +80,25 @@ function UniversityForm({ onSheetOpenChange }) {
             <FormLabel>Logo</FormLabel>
             <Input type="file" />
           </FormItem>
-          <div className="w-full flex items-center justify-end gap-4">
+          {INPUTS.slice(2, INPUTS.length).map((input, ind) => (
+            <FormField
+              control={form.control}
+              name={input.name}
+              key={ind}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{input.label ?? "Label"}</FormLabel>
+                  {renderFormControl(field, input.name, input.placeholder)}
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          ))}
+          <div className="w-full col-span-2 flex items-center justify-end gap-4">
             <Button
               variant="outline"
               size="lg"
-              onClick={() => onSheetOpenChange(false)}
+              onClick={() => onDialogOpenChange(false)}
             >
               Cancel
             </Button>
@@ -138,12 +153,12 @@ function renderFormControl(field, name, placeholder = "") {
         <Select onValueChange={field.onChange} defaultValue={field.value}>
           <FormControl>
             <SelectTrigger>
-              <SelectValue placeholder="Select a verified email to display" />
+              <SelectValue placeholder="Select a status" />
             </SelectTrigger>
           </FormControl>
           <SelectContent>
             <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="not-active">Not Active</SelectItem>
+            <SelectItem value="inactive">Inactive</SelectItem>
           </SelectContent>
         </Select>
       );

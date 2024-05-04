@@ -6,13 +6,15 @@ import { Button } from "@/components/ui/button";
 import { open_sans } from "@/lib/fonts";
 import { PlusCircleIcon } from "lucide-react";
 import { useState } from "react";
+
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "../../../components/ui/sheet";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 const data = [
   {
@@ -54,7 +56,7 @@ const data = [
 ];
 
 function University() {
-  const [sheetOpen, setSheetOpen] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
   return (
     <div className="bg-[whitesmoke] w-full h-full p-8">
       <div className="flex items-center justify-between">
@@ -63,28 +65,22 @@ function University() {
         >
           University
         </h1>
-        <Sheet
-          open={sheetOpen}
-          onClose={() => setSheetOpen(false)}
-          onOpenChange={setSheetOpen}
-        >
-          <SheetTrigger asChild>
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <DialogTrigger asChild>
             <Button variant="primary">
               <PlusCircleIcon />
               <span className="ml-2">Add new university</span>
             </Button>
-          </SheetTrigger>
-          <SheetContent side="bottom" className="!h-screen !overflow-y-auto">
-            <SheetHeader>
-              <SheetTitle className="text-2xl border-b pb-3">
-                Add new university
-              </SheetTitle>
-            </SheetHeader>
-            <div className="w-full ">
-              <UniversityForm onSheetOpenChange={setSheetOpen} />
-            </div>
-          </SheetContent>
-        </Sheet>
+          </DialogTrigger>
+          <DialogContent className="max-w-[700px] max-h-[95vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="text-2xl text-center font-semibold mb-4">
+                Add New University
+              </DialogTitle>
+              <UniversityForm onDialogOpenChange={setDialogOpen} />
+            </DialogHeader>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <div>

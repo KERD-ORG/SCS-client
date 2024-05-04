@@ -26,22 +26,6 @@ import { z } from "zod";
 import { Calendar } from "../ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 
-const INPUTS = [
-  { name: "name", label: "Name", placeholder: "Name" },
-  { name: "start_date", label: "Start Date", placeholder: "Pick a date" },
-  { name: "end_date", label: "End Date", placeholder: "Pick a date" },
-  { name: "funding_type", label: "Funding Type" },
-  { name: "originator", label: "Originator of Funding" },
-  { name: "benefits", label: "Benefits under Funding" },
-  { name: "position", label: "Number Of Position" },
-  { name: "amount", label: "Amount (Yearly)" },
-  { name: "status", label: "Status" },
-  { name: "campus", label: "Campus" },
-  { name: "college", label: "College" },
-  { name: "department", label: "Department" },
-  { name: "statement", label: "Statement", placeholder: "Enter statement..." },
-];
-
 const formSchema = z.object({
   name: z
     .string({ required_error: "Name is required" })
@@ -78,21 +62,324 @@ function FundingForm({ onDialogOpenChange }) {
           onSubmit={form.handleSubmit(onSubmit)}
           className="grid grid-cols-2 gap-8"
         >
-          {INPUTS.map((input, ind) => (
-            <FormField
-              control={form.control}
-              name={input.name}
-              key={ind}
-              render={({ field }) => (
-                <FormItem className="flex flex-col gap-1">
-                  <FormLabel>{input.label ?? "Label"}</FormLabel>
-                  {renderFormControl(field, input.name, input.placeholder)}
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          ))}
-
+          <FormField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+              <FormItem className="flex flex-col gap-1">
+                <FormLabel>Name</FormLabel>
+                <FormControl>
+                  <Input placeholder="Name" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="start_date"
+            render={({ field }) => (
+              <FormItem className="flex flex-col gap-1">
+                <FormLabel>Start Date</FormLabel>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant={"outline"}
+                        className={cn(
+                          "w-full pl-3 text-left font-normal",
+                          !field.value && "text-muted-foreground"
+                        )}
+                      >
+                        {field.value ? (
+                          format(field.value, "PPP")
+                        ) : (
+                          <span>Pick a date</span>
+                        )}
+                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="!w-full p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={field.value}
+                      onSelect={field.onChange}
+                      disabled={(date) =>
+                        date > new Date() || date < new Date("1900-01-01")
+                      }
+                      initialFocus
+                      className={"w-full"}
+                    />
+                  </PopoverContent>
+                </Popover>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="end_date"
+            render={({ field }) => (
+              <FormItem className="flex flex-col gap-1">
+                <FormLabel>End Date</FormLabel>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant={"outline"}
+                        className={cn(
+                          "w-full pl-3 text-left font-normal",
+                          !field.value && "text-muted-foreground"
+                        )}
+                      >
+                        {field.value ? (
+                          format(field.value, "PPP")
+                        ) : (
+                          <span>Pick a date</span>
+                        )}
+                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="!w-full p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={field.value}
+                      onSelect={field.onChange}
+                      disabled={(date) =>
+                        date > new Date() || date < new Date("1900-01-01")
+                      }
+                      initialFocus
+                      className={"w-full"}
+                    />
+                  </PopoverContent>
+                </Popover>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="funding_type"
+            render={({ field }) => (
+              <FormItem className="flex flex-col gap-1">
+                <FormLabel>Funding Type</FormLabel>
+                <FormControl>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select funding type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="TA">TA</SelectItem>
+                      <SelectItem value="RA">RA</SelectItem>
+                      <SelectItem value="Fellowship">Fellowship</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="originator"
+            render={({ field }) => (
+              <FormItem className="flex flex-col gap-1">
+                <FormLabel>Originator of Funding</FormLabel>
+                <FormControl>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select originator of funding" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="organization">Organization</SelectItem>
+                      <SelectItem value="professors">Professors</SelectItem>
+                      <SelectItem value="other">Anonymous or others</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="benefits"
+            render={({ field }) => (
+              <FormItem className="flex flex-col gap-1">
+                <FormLabel>Benefits under Funding</FormLabel>
+                <FormControl>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select benefits under funding" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="stipend">Stipend</SelectItem>
+                      <SelectItem value="medical/health">
+                        Medical/Health Insurance
+                      </SelectItem>
+                      <SelectItem value="dental">Dental Insurance</SelectItem>
+                      <SelectItem value="dorm">Dorm</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="position"
+            render={({ field }) => (
+              <FormItem className="flex flex-col gap-1">
+                <FormLabel>Number Of Position</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="Number Of Position"
+                    {...field}
+                    type="number"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="amount"
+            render={({ field }) => (
+              <FormItem className="flex flex-col gap-1">
+                <FormLabel>Amount (Yearly)</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="Amount (Yearly)"
+                    {...field}
+                    type="number"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="status"
+            render={({ field }) => (
+              <FormItem className="flex flex-col gap-1">
+                <FormLabel>Status</FormLabel>
+                <FormControl>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="not-active">Not Active</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="campus"
+            render={({ field }) => (
+              <FormItem className="flex flex-col gap-1">
+                <FormLabel>Campus</FormLabel>
+                <FormControl>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a campus" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="campus1">Campus 1</SelectItem>
+                      <SelectItem value="campus2">Campus 2</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="college"
+            render={({ field }) => (
+              <FormItem className="flex flex-col gap-1">
+                <FormLabel>College</FormLabel>
+                <FormControl>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a college" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="college1">College 1</SelectItem>
+                      <SelectItem value="college2">College 2</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="department"
+            render={({ field }) => (
+              <FormItem className="flex flex-col gap-1">
+                <FormLabel>Department</FormLabel>
+                <FormControl>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a department" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="department1">Department 1</SelectItem>
+                      <SelectItem value="department2">Department 2</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="statement"
+            render={({ field }) => (
+              <FormItem className="flex flex-col gap-1">
+                <FormLabel>Statement</FormLabel>
+                <FormControl>
+                  <Textarea placeholder="Enter statement..." {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
           <div className="w-full col-span-2 flex items-center justify-end gap-4">
             <Button
               variant="outline"
@@ -109,220 +396,6 @@ function FundingForm({ onDialogOpenChange }) {
       </Form>
     </div>
   );
-}
-
-function renderFormControl(field, name, placeholder = "") {
-  switch (name) {
-    case "name":
-      return (
-        <FormControl>
-          <Input placeholder={placeholder} {...field} />
-        </FormControl>
-      );
-
-    case "position":
-      return (
-        <FormControl>
-          <Input placeholder={placeholder} {...field} type="number" />
-        </FormControl>
-      );
-
-    case "amount":
-      return (
-        <FormControl>
-          <Input placeholder={placeholder} {...field} type="number" />
-        </FormControl>
-      );
-
-    case "start_date":
-      return (
-        <Popover>
-          <PopoverTrigger asChild>
-            <FormControl>
-              <Button
-                variant={"outline"}
-                className={cn(
-                  "w-full pl-3 text-left font-normal",
-                  !field.value && "text-muted-foreground"
-                )}
-              >
-                {field.value ? (
-                  format(field.value, "PPP")
-                ) : (
-                  <span>Pick a date</span>
-                )}
-                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-              </Button>
-            </FormControl>
-          </PopoverTrigger>
-          <PopoverContent className="!w-full p-0" align="start">
-            <Calendar
-              mode="single"
-              selected={field.value}
-              onSelect={field.onChange}
-              disabled={(date) =>
-                date > new Date() || date < new Date("1900-01-01")
-              }
-              initialFocus
-              className={"w-full"}
-            />
-          </PopoverContent>
-        </Popover>
-      );
-
-    case "end_date":
-      return (
-        <Popover>
-          <PopoverTrigger asChild>
-            <FormControl>
-              <Button
-                variant={"outline"}
-                className={cn(
-                  "w-full pl-3 text-left font-normal",
-                  !field.value && "text-muted-foreground"
-                )}
-              >
-                {field.value ? (
-                  format(field.value, "PPP")
-                ) : (
-                  <span>Pick a date</span>
-                )}
-                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-              </Button>
-            </FormControl>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <Calendar
-              mode="single"
-              selected={field.value}
-              onSelect={field.onChange}
-              disabled={(date) =>
-                date > new Date() || date < new Date("1900-01-01")
-              }
-              initialFocus
-            />
-          </PopoverContent>
-        </Popover>
-      );
-
-    case "college":
-      return (
-        <Select onValueChange={field.onChange} defaultValue={field.value}>
-          <FormControl>
-            <SelectTrigger>
-              <SelectValue placeholder="Select a college" />
-            </SelectTrigger>
-          </FormControl>
-          <SelectContent>
-            <SelectItem value="active">College 1</SelectItem>
-            <SelectItem value="not-active">College 2</SelectItem>
-          </SelectContent>
-        </Select>
-      );
-
-    case "campus":
-      return (
-        <Select onValueChange={field.onChange} defaultValue={field.value}>
-          <FormControl>
-            <SelectTrigger>
-              <SelectValue placeholder="Select a campus" />
-            </SelectTrigger>
-          </FormControl>
-          <SelectContent>
-            <SelectItem value="active">Campus 1</SelectItem>
-            <SelectItem value="not-active">Campus 2</SelectItem>
-          </SelectContent>
-        </Select>
-      );
-
-    case "department":
-      return (
-        <Select onValueChange={field.onChange} defaultValue={field.value}>
-          <FormControl>
-            <SelectTrigger>
-              <SelectValue placeholder="Select a department" />
-            </SelectTrigger>
-          </FormControl>
-          <SelectContent>
-            <SelectItem value="active">Department 1</SelectItem>
-            <SelectItem value="not-active">Department 2</SelectItem>
-          </SelectContent>
-        </Select>
-      );
-
-    case "originator":
-      return (
-        <Select onValueChange={field.onChange} defaultValue={field.value}>
-          <FormControl>
-            <SelectTrigger>
-              <SelectValue placeholder="Select originator of funding" />
-            </SelectTrigger>
-          </FormControl>
-          <SelectContent>
-            <SelectItem value="organization">Organization</SelectItem>
-            <SelectItem value="professors">Professors</SelectItem>
-            <SelectItem value="other">Anonymous or others</SelectItem>
-          </SelectContent>
-        </Select>
-      );
-
-    case "benefits":
-      return (
-        <Select onValueChange={field.onChange} defaultValue={field.value}>
-          <FormControl>
-            <SelectTrigger>
-              <SelectValue placeholder="Select benefits under funding" />
-            </SelectTrigger>
-          </FormControl>
-          <SelectContent>
-            <SelectItem value="stipend">Stipend</SelectItem>
-            <SelectItem value="medical/health">
-              Medical/Health Insurance
-            </SelectItem>
-            <SelectItem value="dental">Dental Insurance</SelectItem>
-            <SelectItem value="dorm">Dorm</SelectItem>
-          </SelectContent>
-        </Select>
-      );
-
-    case "statement":
-      return (
-        <FormControl>
-          <Textarea placeholder={placeholder} {...field} />
-        </FormControl>
-      );
-
-    case "status":
-      return (
-        <Select onValueChange={field.onChange} defaultValue={field.value}>
-          <FormControl>
-            <SelectTrigger>
-              <SelectValue placeholder="Select status" />
-            </SelectTrigger>
-          </FormControl>
-          <SelectContent>
-            <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="not-active">Not Active</SelectItem>
-          </SelectContent>
-        </Select>
-      );
-
-    case "funding_type":
-      return (
-        <Select onValueChange={field.onChange} defaultValue={field.value}>
-          <FormControl>
-            <SelectTrigger>
-              <SelectValue placeholder="Select Funding Type" />
-            </SelectTrigger>
-          </FormControl>
-          <SelectContent>
-            <SelectItem value="active">TA</SelectItem>
-            <SelectItem value="not-active">RA</SelectItem>
-            <SelectItem value="not-active">Fellowship</SelectItem>
-          </SelectContent>
-        </Select>
-      );
-  }
 }
 
 export default FundingForm;

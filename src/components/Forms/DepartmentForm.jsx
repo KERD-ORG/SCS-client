@@ -22,20 +22,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
-const INPUTS = [
-  { name: "name", label: "Department Name", placeholder: "Name" },
-  { name: "campus", label: "Campus" },
-  { name: "college", label: "College" },
-  {
-    name: "web_address",
-    label: "Web Address",
-    placeholder: "http://example.com",
-  },
-  { name: "address", label: "Address", placeholder: "Enter address..." },
-  { name: "statement", label: "Statement", placeholder: "Enter statement..." },
-  { name: "status", label: "Status" },
-];
-
 const formSchema = z.object({
   name: z
     .string({ required_error: "Name is required" })
@@ -64,22 +50,127 @@ function DepartmentForm({ onDialogOpenChange }) {
   return (
     <div className="mb-1.5 mt-6">
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-2 gap-8">
-          {INPUTS.map((input, ind) => (
-            <FormField
-              control={form.control}
-              name={input.name}
-              key={ind}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{input.label ?? "Label"}</FormLabel>
-                  {renderFormControl(field, input.name, input.placeholder)}
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          ))}
-
+        <form
+          onSubmit={form.handleSubmit(onSubmit)}
+          className="grid grid-cols-2 gap-8"
+        >
+          <FormField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Department Name</FormLabel>
+                <FormControl>
+                  <Input placeholder="Name" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="campus"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Campus</FormLabel>
+                <FormControl>
+                  <Input placeholder="Enter Campus" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="college"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>College</FormLabel>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a college" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="active">College 1</SelectItem>
+                    <SelectItem value="not-active">College 2</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="web_address"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Web Address</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="http://example.com"
+                    type="url"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="address"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Address</FormLabel>
+                <FormControl>
+                  <Textarea placeholder="Enter address..." {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="statement"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Statement</FormLabel>
+                <FormControl>
+                  <Textarea placeholder="Enter statement..." {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="status"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Status</FormLabel>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="not-active">Not Active</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
           <div className="w-full col-span-2 flex items-center justify-end gap-4">
             <Button
               variant="outline"
@@ -96,83 +187,6 @@ function DepartmentForm({ onDialogOpenChange }) {
       </Form>
     </div>
   );
-}
-
-function renderFormControl(field, name, placeholder = "") {
-  switch (name) {
-    case "name":
-      return (
-        <FormControl>
-          <Input placeholder={placeholder} {...field} />
-        </FormControl>
-      );
-
-    case "web_address":
-      return (
-        <FormControl>
-          <Input placeholder={placeholder} type="url" {...field} />
-        </FormControl>
-      );
-
-    case "college":
-      return (
-        <Select onValueChange={field.onChange} defaultValue={field.value}>
-          <FormControl>
-            <SelectTrigger>
-              <SelectValue placeholder="Select a college" />
-            </SelectTrigger>
-          </FormControl>
-          <SelectContent>
-            <SelectItem value="active">College 1</SelectItem>
-            <SelectItem value="not-active">College 2</SelectItem>
-          </SelectContent>
-        </Select>
-      );
-
-    case "campus":
-      return (
-        <Select onValueChange={field.onChange} defaultValue={field.value}>
-          <FormControl>
-            <SelectTrigger>
-              <SelectValue placeholder="Select a campus" />
-            </SelectTrigger>
-          </FormControl>
-          <SelectContent>
-            <SelectItem value="active">Campus 1</SelectItem>
-            <SelectItem value="not-active">Campus 2</SelectItem>
-          </SelectContent>
-        </Select>
-      );
-
-    case "address":
-      return (
-        <FormControl>
-          <Textarea placeholder={placeholder} {...field} />
-        </FormControl>
-      );
-
-    case "statement":
-      return (
-        <FormControl>
-          <Textarea placeholder={placeholder} {...field} />
-        </FormControl>
-      );
-
-    case "status":
-      return (
-        <Select onValueChange={field.onChange} defaultValue={field.value}>
-          <FormControl>
-            <SelectTrigger>
-              <SelectValue placeholder="Select status" />
-            </SelectTrigger>
-          </FormControl>
-          <SelectContent>
-            <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="not-active">Not Active</SelectItem>
-          </SelectContent>
-        </Select>
-      );
-  }
 }
 
 export default DepartmentForm;

@@ -11,6 +11,7 @@ import { useState } from "react"
 export function LoginForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log()
     const res = await fetch('http://localhost:8000/login/', {
       method: 'POST',
       headers: {
@@ -37,7 +38,7 @@ export function LoginForm() {
             <Label htmlFor="email">Email</Label>
             <Input
               id="email"
-              type="email"
+              type="text"
               placeholder="m@example.com"
               required
             />

@@ -25,6 +25,8 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Calendar } from "../ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
+import axios from "axios";
+
 
 const formSchema = z.object({
   name: z
@@ -51,15 +53,45 @@ const formSchema = z.object({
 function FundingForm({ onDialogOpenChange }) {
   const form = useForm({ resolver: zodResolver(formSchema) });
 
-  function onSubmit(values) {
-    console.log(values);
-  }
+ const fundingformSubmit = async (data) => {
+   console.log(data);
+   const formattedStartDate = format(data.start_date, "yyyy-MM-dd");
+   const formattedEndDate = format(data.end_date, "yyyy-MM-dd");
+   try {
+    const res = await axios
+    .post("https://scs-backend.herokuapp.com/api/funding", {
+     name: data.name,
+     start_date: formattedStartDate,
+     end_date: formattedEndDate,
+     funding_type: data.funding_type,
+     number_of_positions: data.position,
+     department: data.department,
+     campus: data.campus,
+     college: data.college,
+     originator: data.originator,
+     benefits: data.benefits,
+     statement: data.statement,
+     status: data.status,
+     amount: data.amount,
+    }) 
+    console.log(res);
+    if (res.status === 200) {
+      onDialogOpenChange(false);
+      toast.success("Funding created successfully");
+    } else {
+      toast.error("Something went wrong");
+    }
+   } catch (error) {
+     console.log(error);
+   } 
+ }
+
 
   return (
     <div className="mb-1.5 mt-6">
       <Form {...form}>
         <form
-          onSubmit={form.handleSubmit(onSubmit)}
+          onSubmit={form.handleSubmit(fundingformSubmit)}
           className="grid grid-cols-2 gap-8"
         >
           <FormField
@@ -246,8 +278,10 @@ function FundingForm({ onDialogOpenChange }) {
                 <FormControl>
                   <Input
                     placeholder="Number Of Position"
-                    {...field}
                     type="number"
+                    {...field}
+                    value={field.value || ""}
+                    onChange={(e) => field.onChange(e.target.valueAsNumber)}
                   />
                 </FormControl>
                 <FormMessage />
@@ -265,6 +299,8 @@ function FundingForm({ onDialogOpenChange }) {
                     placeholder="Amount (Yearly)"
                     {...field}
                     type="number"
+                    value={field.value || ""}
+                    onChange={(e) => field.onChange(e.target.valueAsNumber)}
                   />
                 </FormControl>
                 <FormMessage />

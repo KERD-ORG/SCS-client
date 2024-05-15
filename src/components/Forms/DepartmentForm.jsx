@@ -21,6 +21,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import axios from "axios";
+
 
 const formSchema = z.object({
   name: z
@@ -43,15 +45,67 @@ const formSchema = z.object({
 function DepartmentForm({ onDialogOpenChange }) {
   const form = useForm({ resolver: zodResolver(formSchema) });
 
-  function onSubmit(values) {
+  // const DeptfromSubmit = async (data) => {
+  //   console.log(data);
+  //   const res = await axios.post("http://localhost:8000/departments/new/", {
+  //     name: data.name,
+  //     college: data.college,
+  //     campus: data.campus,
+  //     web_address: data.web_address,
+  //     address: data.address,
+  //     statement: data.statement,
+  //     status: data.status,
+  //   } , {
+  //     headers: {
+  //       "Content-Type": "application/json",
+  //       Authorization: `Bearer ${localStorage.getItem("token")}`,
+  //     },
+  //   })
+  //   console.log("response", res);
+  //   if (res.status === 200) {
+  //     onDialogOpenChange(false);
+  //     toast.success("Department created successfully");
+  //   } else {
+  //     toast.error("Something went wrong");  
+  //   }
+  // }
+
+  const DeptfromSubmit = async (values) => {
     console.log(values);
-  }
+    try {
+      const res = await axios.post("http://localhost:8000/departments/new/", {
+        name: values.name,
+        college: values.college,
+        campus: values.campus,
+        web_address: values.web_address,
+        address: values.address,
+        statement: values.statement,
+        status: values.status,
+      } , {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        }
+      })
+      console.log("response", res);
+    } catch (error) {
+      console.log(error);
+      toast.error("Something went wrong");
+    } finally {
+      onDialogOpenChange(false);
+      if (res.status === 200) {
+        toast.success("Department created successfully"); 
+      } else {
+        toast.error("Something went wrong");
+      }
+      }
+    }
 
   return (
     <div className="mb-1.5 mt-6">
       <Form {...form}>
         <form
-          onSubmit={form.handleSubmit(onSubmit)}
+          onSubmit={form.handleSubmit(DeptfromSubmit)}
           className="grid grid-cols-2 gap-8"
         >
           <FormField

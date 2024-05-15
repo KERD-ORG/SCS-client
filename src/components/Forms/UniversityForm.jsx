@@ -38,6 +38,8 @@ import { z } from "zod";
 import { cn } from "@/lib/utils";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { toast } from "sonner";
+import axios from 'axios';
+
 
 const formSchema = z.object({
   name: z
@@ -71,9 +73,40 @@ function UniversityForm({ onDialogOpenChange }) {
     })();
   }, []);
 
-  function onSubmit(values) {
-    console.log(values);
-  }
+
+  // University api call
+  const UniversityformSubmit = async (values) => {
+    setLoading(true);
+    try {
+      console.log(values);
+      const res = await axios.post("http://localhost:8000//universities/new/", {
+        name: values.name,
+        web_address: values.web_address,
+        country: values.country,
+        state: values.state,
+        statement: values.statement,
+        status: values.status,
+      } , {
+        headers: { 
+         "Content-Type": "application/json",
+         Authorization: `Bearer ${localStorage.getItem("token")}`,
+       }
+      });
+      console.log("response", res);
+      if (res.status === 200) {
+        toast.success("University created successfully");
+        onDialogOpenChange(false);
+      } else {
+        
+        toast.error("Something went wrong");
+      }
+    } catch (error) {
+      console.log("There have an error");
+      toast.error("Something went wrong");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const onCountrySelect = async (form, country) => {
     form.setValue("country", country);
@@ -103,7 +136,7 @@ function UniversityForm({ onDialogOpenChange }) {
     <div className="mb-1.5 mt-6">
       <Form {...form}>
         <form
-          onSubmit={form.handleSubmit(onSubmit)}
+          onSubmit={form.handleSubmit(UniversityformSubmit)}
           className="grid grid-cols-2 gap-8"
         >
           <FormField

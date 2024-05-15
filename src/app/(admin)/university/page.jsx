@@ -55,6 +55,8 @@ const data = [
   },
 ];
 
+
+
 function University() {
   const [dialogOpen, setDialogOpen] = useState(false);
   return (

@@ -21,6 +21,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import axios from "axios" ;
+
+
 
 const formSchema = z.object({
   name: z
@@ -29,7 +32,7 @@ const formSchema = z.object({
   web_address: z.string({ required_error: "Url is required" }).url({
     message: "Invalid url",
   }),
-  campus: z.string({ required_error: "Campus is required" }),
+  university: z.string({ required_error: "university is required" }),
   address: z
     .string({ required_error: "Address is required" })
     .min(2, { message: "Must be 2 or more character long" }),
@@ -42,15 +45,40 @@ const formSchema = z.object({
 function CollegeForm({ onDialogOpenChange }) {
   const form = useForm({ resolver: zodResolver(formSchema) });
 
-  function onSubmit(values) {
-    console.log(values);
+//  college api call
+  const CollegeformSubmit = async (data) => {
+    console.log(data);
+    try {
+      const res = await axios.post("http://localhost:8000/colleges/new/", {
+        name: data.name,
+        web_address: data.web_address,
+        university: data.university,
+        address: data.address,
+        statement: data.statement,  
+        status: data.status,
+      } , {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+      console.log("response", res);
+      if (res.status === 200) {
+        onDialogOpenChange(false);
+        toast.success("College created successfully");
+      } else {
+        toast.error("Something went wrong");
+      }
+    } catch (error) {
+      console.log(error);
+    }
   }
 
   return (
     <div className="mb-1.5 mt-6">
       <Form {...form}>
         <form
-          onSubmit={form.handleSubmit(onSubmit)}
+          onSubmit={form.handleSubmit(CollegeformSubmit)}
           className="grid grid-cols-2 gap-8"
         >
           <FormField
@@ -85,22 +113,22 @@ function CollegeForm({ onDialogOpenChange }) {
           />
           <FormField
             control={form.control}
-            name="campus"
+            name="university"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Campus</FormLabel>
+                <FormLabel>University</FormLabel>
                 <Select
                   onValueChange={field.onChange}
                   defaultValue={field.value}
                 >
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select a campus" />
+                      <SelectValue placeholder="Select a University" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="active">Campus 1</SelectItem>
-                    <SelectItem value="not-active">Campus 2</SelectItem>
+                    <SelectItem value="1">University 1</SelectItem>
+                    <SelectItem value="2">University 2</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />

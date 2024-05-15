@@ -39,6 +39,8 @@ import { cn } from "@/lib/utils";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { toast } from "sonner";
 import axios from 'axios';
+import { add } from "date-fns";
+import cookies from "js-cookie";
 
 
 const formSchema = z.object({
@@ -76,37 +78,42 @@ function UniversityForm({ onDialogOpenChange }) {
 
   // University api call
   const UniversityformSubmit = async (values) => {
+    const token = cookies.get("ACCESS_TOKEN");
+    console.log(token);
     setLoading(true);
     try {
-      console.log(values);
-      const res = await axios.post("http://localhost:8000//universities/new/", {
-        name: values.name,
-        web_address: values.web_address,
-        country: values.country,
-        state: values.state,
-        statement: values.statement,
-        status: values.status,
-      } , {
-        headers: { 
-         "Content-Type": "application/json",
-         Authorization: `Bearer ${localStorage.getItem("token")}`,
-       }
-      });
+      const res = await axios.post(
+        "http://127.0.0.1:8000/universities/new/",
+        {
+          name: values.name,
+          web_address: values.web_address,
+          country: values.country,
+          state: values.state,
+          statement: values.statement,
+          status: values.status,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
       console.log("response", res);
-      if (res.status === 200) {
+      if (res.status === 201) {
         toast.success("University created successfully");
         onDialogOpenChange(false);
       } else {
-        
-        toast.error("Something went wrong");
+        throw new Error("Failed to create university");
       }
     } catch (error) {
-      console.log("There have an error");
+      console.error("Error submitting form:", error);
       toast.error("Something went wrong");
     } finally {
       setLoading(false);
     }
   };
+  
 
   const onCountrySelect = async (form, country) => {
     form.setValue("country", country);
@@ -309,8 +316,8 @@ function UniversityForm({ onDialogOpenChange }) {
                       <SelectValue placeholder="Select a status" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="inactive">Inactive</SelectItem>
+                      <SelectItem value="Active">Active</SelectItem>
+                      <SelectItem value="Inactive">Inactive</SelectItem>
                     </SelectContent>
                   </Select>
                 </FormControl>

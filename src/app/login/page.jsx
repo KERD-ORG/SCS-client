@@ -29,44 +29,6 @@ export default function LoginForm() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-<<<<<<< HEAD
-    console.log()
-    const res = await fetch('http://localhost:8000/login/', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({email: e.target['email'].value, password: e.target['password'].value})
-    })
-    const data= await res.json()
-    console.log(data)
-  }
-  return (
-    <div className="min-h-screen grid place-items-center bg-[whitesmoke]">
-        <Card className="mx-auto max-w-sm">
-      <CardHeader>
-        <CardTitle className="text-2xl">Login</CardTitle>
-        <CardDescription>
-          Enter your email below to login to your account
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit}>
-        <div className="grid gap-4">
-          <div className="grid gap-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="text"
-              placeholder="m@example.com"
-              required
-            />
-          </div>
-          <div className="grid gap-2">
-            <div className="flex items-center">
-              <Label htmlFor="password">Password</Label>
-              {/* <Link href="#" className="ml-auto inline-block text-sm underline">
-=======
     try {
       const res = await api.post("login/", {
         username: e.target["username"].value,
@@ -103,7 +65,6 @@ export default function LoginForm() {
                 <div className="flex items-center">
                   <Label htmlFor="password">Password</Label>
                   {/* <Link href="#" className="ml-auto inline-block text-sm underline">
->>>>>>> a40585d36466bde3fdd245ecc06c7ef80273b0d3
                 Forgot your password?
               </Link> */}
                 </div>

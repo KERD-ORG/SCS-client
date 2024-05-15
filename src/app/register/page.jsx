@@ -30,9 +30,11 @@ function Register() {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
+        username: e.target["username"].value,
         email: e.target["email"].value,
         password: e.target["password"].value,
-        type: userType
+        is_teacher: userType === 'teacher',
+        is_student: userType === 'student'
       }),
     });
     const data = await res.json();
@@ -51,6 +53,15 @@ function Register() {
         <CardContent>
           <form onSubmit={handleSubmit}>
             <div className="grid gap-4">
+            <div className="grid gap-2">
+                <Label htmlFor="username">Username</Label>
+                <Input
+                  id="username"
+                  type="text"
+                  placeholder="john_doe"
+                  required
+                />
+              </div>
               <div className="grid gap-2">
                 <Label htmlFor="email">Email</Label>
                 <Input

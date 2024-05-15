@@ -1,6 +1,17 @@
 "use client";
 
+import { cn } from "@/lib/utils";
+import { Check, ChevronsUpDown } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import {
   Form,
   FormControl,
@@ -9,6 +20,11 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -21,6 +37,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { useEffect, useState } from "react";
 
 const formSchema = z.object({
   name: z
@@ -40,10 +57,68 @@ const formSchema = z.object({
 
 function CampusForm({ onDialogOpenChange }) {
   const form = useForm({ resolver: zodResolver(formSchema) });
+  const [countries, setCountries] = useState([]);
+  const [selectedCountry, setSelectedCountry] = useState("");
+  const [states, setStates] = useState();
+  const [cities, setCities] = useState();
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    (async function () {
+      const res = await fetch(
+        "https://countriesnow.space/api/v0.1/countries/iso"
+      );
+      const { data } = await res.json();
+      setCountries(data.map((val) => val.name));
+    })();
+  }, []);
 
   function onSubmit(values) {
     console.log(values);
   }
+
+  const onCountrySelect = async (form, country) => {
+    form.setValue("country", country);
+    setSelectedCountry(country);
+    setLoading(true);
+    try {
+      const fetchStates = fetch(
+        "https://countriesnow.space/api/v0.1/countries/states",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ country }),
+        }
+      ).then((res) => res.json());
+
+      const fetchCities = fetch(
+        "https://countriesnow.space/api/v0.1/countries/cities",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ country }),
+        }
+      ).then((res) => res.json());
+
+      const [statesData, citiesData] = await Promise.all([
+        fetchStates,
+        fetchCities,
+      ]);
+
+      if (statesData.error) throw new Error(statesData.msg);
+      if (citiesData.error) throw new Error(citiesData.msg);
+
+      setStates(statesData.data.states.map((val) => val.name));
+      setCities(citiesData.data);
+    } catch (error) {
+      toast(error);
+    }
+    setLoading(false);
+  };
 
   return (
     <div className="mb-1.5 mt-6">
@@ -88,39 +163,182 @@ function CampusForm({ onDialogOpenChange }) {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Country</FormLabel>
-                <FormControl>
-                  <Input placeholder="USA" {...field} />
-                </FormControl>
-                <FormMessage />
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        className={cn(
+                          "w-full justify-between",
+                          !field.value && "text-muted-foreground"
+                        )}
+                      >
+                        {field.value
+                          ? countries.find((country) => country === field.value)
+                          : "Select country"}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+
+                  <PopoverContent className="w-full p-0">
+                    <Command>
+                      <CommandInput placeholder="Search country..." />
+                      <CommandEmpty>No country found.</CommandEmpty>
+                      <CommandGroup>
+                        <CommandList>
+                          {countries.map((country) => {
+                            return (
+                              <CommandItem
+                                value={country}
+                                key={country}
+                                onSelect={() => onCountrySelect(form, country)}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    country === field.value
+                                      ? "opacity-100"
+                                      : "opacity-0"
+                                  )}
+                                />
+                                {country}
+                              </CommandItem>
+                            );
+                          })}
+                        </CommandList>
+                      </CommandGroup>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </FormItem>
             )}
           />
-          <FormField
-            control={form.control}
-            name="state"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>State</FormLabel>
-                <FormControl>
-                  <Input placeholder="New York" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="city"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>City</FormLabel>
-                <FormControl>
-                  <Input placeholder="City" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          {states && (
+            <FormField
+              control={form.control}
+              name="state"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>State</FormLabel>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          className={cn(
+                            "w-full justify-between",
+                            !field.value && "text-muted-foreground"
+                          )}
+                        >
+                          {field.value
+                            ? states.find((state) => state === field.value)
+                            : "Select state"}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+
+                    <PopoverContent className="w-full p-0">
+                      <Command>
+                        <CommandInput placeholder="Search state..." />
+                        <CommandEmpty>No state found.</CommandEmpty>
+                        <CommandGroup>
+                          <CommandList>
+                            {states.map((state) => {
+                              return (
+                                <CommandItem
+                                  value={state}
+                                  key={state}
+                                  onSelect={() => {
+                                    form.setValue("state", state);
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      state === field.value
+                                        ? "opacity-100"
+                                        : "opacity-0"
+                                    )}
+                                  />
+                                  {state}
+                                </CommandItem>
+                              );
+                            })}
+                          </CommandList>
+                        </CommandGroup>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                </FormItem>
+              )}
+            />
+          )}
+          {cities && (
+            <FormField
+              control={form.control}
+              name="city"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>City</FormLabel>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          className={cn(
+                            "w-full justify-between",
+                            !field.value && "text-muted-foreground"
+                          )}
+                        >
+                          {field.value
+                            ? cities.find((city) => city === field.value)
+                            : "Select city"}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+
+                    <PopoverContent className="w-full p-0">
+                      <Command>
+                        <CommandInput placeholder="Search city..." />
+                        <CommandEmpty>No city found.</CommandEmpty>
+                        <CommandGroup>
+                          <CommandList>
+                            {cities.map((city) => {
+                              return (
+                                <CommandItem
+                                  value={city}
+                                  key={city}
+                                  onSelect={() => {
+                                    form.setValue("city", city);
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      city === field.value
+                                        ? "opacity-100"
+                                        : "opacity-0"
+                                    )}
+                                  />
+                                  {city}
+                                </CommandItem>
+                              );
+                            })}
+                          </CommandList>
+                        </CommandGroup>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                </FormItem>
+              )}
+            />
+          )}
           <FormField
             control={form.control}
             name="status"
@@ -166,7 +384,12 @@ function CampusForm({ onDialogOpenChange }) {
             >
               Cancel
             </Button>
-            <Button type="submit" variant="secondary" size="lg">
+            <Button
+              type="submit"
+              variant="secondary"
+              size="lg"
+              disabled={loading}
+            >
               Submit
             </Button>
           </div>

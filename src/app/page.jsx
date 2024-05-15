@@ -1,10 +1,13 @@
+import { verifyToken } from "@/lib/auth";
 import { redirect } from "next/navigation";
-
-export default function Home() {
-  redirect('/university')
-  return (
-    <div className="bg-[whitesmoke] w-full h-full px-8">
-      Home Page
-    </div>
-  );
+import Cookies from "js-cookie";
+import { cookies } from 'next/headers'
+export default async function Home() {
+  const accessToken = cookies().get('ACCESS_TOKEN')
+  if(!accessToken) redirect('/login')
+  const {authorized} = await verifyToken(accessToken.value)
+  if(authorized) redirect('/university')
+  else redirect('/login')
+  return <div className="bg-[whitesmoke] w-full h-full px-8">Home Page</div>;
 }
+

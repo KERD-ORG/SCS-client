@@ -16,31 +16,43 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import api from "@/lib/api";
 import Link from "next/link";
-import React, { useState } from "react";
+import { useRouter } from "next/navigation";
+import React, { useEffect, useState } from "react";
+import { toast } from "sonner";
+import Cookie from "js-cookie";
 
 function Register() {
+  const router = useRouter();
   const [userType, setUserType] = useState("student");
+
+  useEffect(() => {
+    // Redirect if already authenticated
+    const token = Cookie.get("ACCESS_TOKEN");
+    if (token) {
+      router.replace("/university"); // Or to another appropriate route
+    }
+  }, [router]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const res = await fetch("http://localhost:8000/register/", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
+    try {
+      const res = await api.post("register/", {
         username: e.target["username"].value,
         email: e.target["email"].value,
         password: e.target["password"].value,
-        is_teacher: userType === 'teacher',
-        is_student: userType === 'student'
-      }),
-    });
-    const data = await res.json();
-    console.log(data);
+        is_teacher: userType === "teacher",
+        is_student: userType === "student",
+      });
+      if (res.status === 201) {
+        router.replace("/login");
+      }
+    } catch (error) {
+      toast(error.message);
+    }
   };
-  
+
   return (
     <div className="min-h-screen grid place-items-center bg-[whitesmoke]">
       <Card className="mx-auto max-w-sm">
@@ -53,7 +65,7 @@ function Register() {
         <CardContent>
           <form onSubmit={handleSubmit}>
             <div className="grid gap-4">
-            <div className="grid gap-2">
+              <div className="grid gap-2">
                 <Label htmlFor="username">Username</Label>
                 <Input
                   id="username"

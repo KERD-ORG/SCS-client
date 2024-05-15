@@ -22,6 +22,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import axios from "axios" ;
+import cookies from "js-cookie";
+import { toast } from "sonner";
+import { useEffect, useState } from "react";
+
 
 
 
@@ -44,26 +48,38 @@ const formSchema = z.object({
 
 function CollegeForm({ onDialogOpenChange }) {
   const form = useForm({ resolver: zodResolver(formSchema) });
+  const [university, setUniversity] = useState("");
+
+ 
+  useEffect(() => {
+    const getUniversity = async () => {
+      const res = await axios.get("http://127.0.0.1:8000/universities/");
+      console.log("universities", res.data);
+      setUniversity(res.data);
+    };
+    getUniversity();
+  },[])
 
 //  college api call
   const CollegeformSubmit = async (data) => {
     console.log(data);
+    const token = cookies.get("ACCESS_TOKEN");
     try {
-      const res = await axios.post("http://localhost:8000/colleges/new/", {
+      const res = await axios.post("http://127.0.0.1:8000/colleges/new/", {
         name: data.name,
-        web_address: data.web_address,
         university: data.university,
+        web_address: data.web_address,
         address: data.address,
         statement: data.statement,  
         status: data.status,
       } , {
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${token}`,
         },
       });
       console.log("response", res);
-      if (res.status === 200) {
+      if (res.status === 201) {
         onDialogOpenChange(false);
         toast.success("College created successfully");
       } else {
@@ -127,8 +143,9 @@ function CollegeForm({ onDialogOpenChange }) {
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="1">University 1</SelectItem>
-                    <SelectItem value="2">University 2</SelectItem>
+                    {university && university.map((university) => (
+                      <SelectItem key={university.id} value={university.id}>{university.name}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -151,10 +168,10 @@ function CollegeForm({ onDialogOpenChange }) {
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="not-active">Not Active</SelectItem>
+                    <SelectItem value="Active">Active</SelectItem>
+                    <SelectItem value="Not-Active">Not Active</SelectItem>
                   </SelectContent>
-                </Select>
+                </Select> 
                 <FormMessage />
               </FormItem>
             )}

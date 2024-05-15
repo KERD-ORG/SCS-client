@@ -38,6 +38,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useEffect, useState } from "react";
+const cookies = require("js-cookie");
+import axios from "axios";
 
 const formSchema = z.object({
   name: z
@@ -73,9 +75,44 @@ function CampusForm({ onDialogOpenChange }) {
     })();
   }, []);
 
-  function onSubmit(values) {
-    console.log(values);
+
+  const CampusformSubmit = async (values) => {
+    const token = cookies.get("ACCESS_TOKEN");
+    console.log(token);
+    setLoading(true);
+    try {
+      const res = await axios.post(
+        "http://127.0.0.1:8000/campuses/new/",
+        {
+          name: values.name,
+          web_address: values.web_address,
+          country: values.country,
+          state: values.state,
+          city: values.city,
+          statement: values.statement,
+          status: values.status,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          }
+        } 
+      );
+      console.log("response", res);
+      if (res.status === 201) {
+        onDialogOpenChange(false);
+        toast.success("Campus created successfully");
+      } else {
+        toast.error("Something went wrong");
+      }
+    } catch (error) {
+      console.log(error);
+      toast.error("Something went wrong");
+    }
+
   }
+ 
 
   const onCountrySelect = async (form, country) => {
     form.setValue("country", country);
@@ -124,7 +161,7 @@ function CampusForm({ onDialogOpenChange }) {
     <div className="mb-1.5 mt-6">
       <Form {...form}>
         <form
-          onSubmit={form.handleSubmit(onSubmit)}
+          onSubmit={form.handleSubmit(CampusformSubmit)}
           className="grid grid-cols-2 gap-8"
         >
           <FormField
@@ -355,8 +392,8 @@ function CampusForm({ onDialogOpenChange }) {
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="not-active">Not Active</SelectItem>
+                    <SelectItem value="Active">Active</SelectItem>
+                    <SelectItem value="Not-Active">Not Active</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />

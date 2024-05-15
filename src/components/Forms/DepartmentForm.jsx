@@ -22,6 +22,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import axios from "axios";
+import {useEffect, useState} from 'react';
+import cookies from "js-cookie";
+import { toast } from "sonner";
 
 
 const formSchema = z.object({
@@ -44,35 +47,26 @@ const formSchema = z.object({
 
 function DepartmentForm({ onDialogOpenChange }) {
   const form = useForm({ resolver: zodResolver(formSchema) });
+  const [colleges, setColleges] = useState("");
+  const [campuses, setCampuses] = useState("");
 
-  // const DeptfromSubmit = async (data) => {
-  //   console.log(data);
-  //   const res = await axios.post("http://localhost:8000/departments/new/", {
-  //     name: data.name,
-  //     college: data.college,
-  //     campus: data.campus,
-  //     web_address: data.web_address,
-  //     address: data.address,
-  //     statement: data.statement,
-  //     status: data.status,
-  //   } , {
-  //     headers: {
-  //       "Content-Type": "application/json",
-  //       Authorization: `Bearer ${localStorage.getItem("token")}`,
-  //     },
-  //   })
-  //   console.log("response", res);
-  //   if (res.status === 200) {
-  //     onDialogOpenChange(false);
-  //     toast.success("Department created successfully");
-  //   } else {
-  //     toast.error("Something went wrong");  
-  //   }
-  // }
+  useEffect(() => {
+    const fetchColleges = async () => {
+       const res = await axios.get("http://localhost:8000/colleges/").then((res) => {
+         setColleges(res.data);
+       })
+       const res1 = await axios.get("http://localhost:8000/campuses/").then((res) => {
+         setCampuses(res.data);
+       })
+    }
+    fetchColleges()
+  }, [])
 
   const DeptfromSubmit = async (values) => {
     console.log(values);
     try {
+      const token = cookies.get("ACCESS_TOKEN");
+      console.log(token);
       const res = await axios.post("http://localhost:8000/departments/new/", {
         name: values.name,
         college: values.college,
@@ -84,22 +78,22 @@ function DepartmentForm({ onDialogOpenChange }) {
       } , {
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${token}`,
         }
       })
       console.log("response", res);
-    } catch (error) {
-      console.log(error);
-      toast.error("Something went wrong");
-    } finally {
-      onDialogOpenChange(false);
-      if (res.status === 200) {
-        toast.success("Department created successfully"); 
+      if (res.status === 201) {
+        toast.success("Department created successfully");
+        onDialogOpenChange(false);
       } else {
         toast.error("Something went wrong");
       }
-      }
+
+    } catch (error) {
+      console.log(error);
+      toast.error("Something went wrong");
     }
+  }
 
   return (
     <div className="mb-1.5 mt-6">
@@ -121,15 +115,29 @@ function DepartmentForm({ onDialogOpenChange }) {
               </FormItem>
             )}
           />
-          <FormField
+           <FormField
             control={form.control}
             name="campus"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Campus</FormLabel>
-                <FormControl>
-                  <Input placeholder="Enter Campus" {...field} />
-                </FormControl>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select campus" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {
+                      campuses && campuses.map((campus) => (
+                        <SelectItem key={campus.id} value={campus.id}>{campus.name}</SelectItem>
+                      ))
+                    }
+                  </SelectContent>
+                </Select>
                 <FormMessage />
               </FormItem>
             )}
@@ -150,8 +158,11 @@ function DepartmentForm({ onDialogOpenChange }) {
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="active">College 1</SelectItem>
-                    <SelectItem value="not-active">College 2</SelectItem>
+                    {
+                     colleges && colleges.map((college) => (
+                      <SelectItem key={college.id} value={college.id}>{college.name}</SelectItem>
+                      ))
+                    }
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -217,8 +228,8 @@ function DepartmentForm({ onDialogOpenChange }) {
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="not-active">Not Active</SelectItem>
+                    <SelectItem value="Active">Active</SelectItem>
+                    <SelectItem value="Not-Active">Not Active</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />

@@ -10,11 +10,11 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
-import api from "../../lib/api";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import Cookie from "js-cookie";
 import { useEffect } from "react";
+import axios from "axios";
 
 export default function LoginForm() {
   const router = useRouter();
@@ -23,14 +23,23 @@ export default function LoginForm() {
     // Redirect if already authenticated
     const token = Cookie.get("ACCESS_TOKEN");
     if (token) {
-      router.replace("/university"); // Or to another appropriate route
+      (async function () {
+        try {
+          const res = await axios.get("http://localhost:8000/verify-token/", {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (res.status === 200) router.replace("/university");
+        } catch (error) {
+          console.log(error);
+        }
+      })();
     }
   }, [router]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await api.post("login/", {
+      const res = await axios.post("http://localhost:8000/login/", {
         username: e.target["username"].value,
         password: e.target["password"].value,
       });

@@ -16,29 +16,38 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import api from "@/lib/api";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 import Cookie from "js-cookie";
+import axios from "axios";
 
 function Register() {
   const router = useRouter();
   const [userType, setUserType] = useState("student");
 
-  useEffect(() => {
+  useEffuseEffect(() => {
     // Redirect if already authenticated
     const token = Cookie.get("ACCESS_TOKEN");
     if (token) {
-      router.replace("/university"); // Or to another appropriate route
+      (async function () {
+        try {
+          const res = await axios.get("http://localhost:8000/verify-token/", {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (res.status === 200) router.replace("/university");
+        } catch (error) {
+          console.log(error);
+        }
+      })();
     }
   }, [router]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await api.post("register/", {
+      const res = await axios.post("http://localhost:8000/register/", {
         username: e.target["username"].value,
         email: e.target["email"].value,
         password: e.target["password"].value,

@@ -2,6 +2,14 @@
 
 import { Button } from "@/components/ui/button";
 import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
   Form,
   FormControl,
   FormField,
@@ -9,6 +17,12 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"; 
+import { Check, ChevronsUpDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -21,13 +35,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import axios from "axios" ;
+import axios from "axios";
 import cookies from "js-cookie";
 import { toast } from "sonner";
 import { useEffect, useState } from "react";
-
-
-
+import { cn } from "@/lib/utils";
 
 const formSchema = z.object({
   name: z
@@ -48,36 +60,38 @@ const formSchema = z.object({
 
 function CollegeForm({ onDialogOpenChange }) {
   const form = useForm({ resolver: zodResolver(formSchema) });
-  const [university, setUniversity] = useState("");
+  const [universities, setUniversity] = useState([]);
 
- 
   useEffect(() => {
     const getUniversity = async () => {
       const res = await axios.get("http://127.0.0.1:8000/universities/");
-      console.log("universities", res.data);
-      setUniversity(res.data);
+      setUniversity(res.data.map(val => val.name));
     };
     getUniversity();
-  },[])
+  }, []);
 
-//  college api call
+  //  college api call
   const CollegeformSubmit = async (data) => {
     console.log(data);
     const token = cookies.get("ACCESS_TOKEN");
     try {
-      const res = await axios.post("http://127.0.0.1:8000/colleges/new/", {
-        name: data.name,
-        university: data.university,
-        web_address: data.web_address,
-        address: data.address,
-        statement: data.statement,  
-        status: data.status,
-      } , {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+      const res = await axios.post(
+        "http://127.0.0.1:8000/colleges/new/",
+        {
+          name: data.name,
+          university: data.university,
+          web_address: data.web_address,
+          address: data.address,
+          statement: data.statement,
+          status: data.status,
         },
-      });
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
       console.log("response", res);
       if (res.status === 201) {
         onDialogOpenChange(false);
@@ -88,7 +102,7 @@ function CollegeForm({ onDialogOpenChange }) {
     } catch (error) {
       console.log(error);
     }
-  }
+  };
 
   return (
     <div className="mb-1.5 mt-6">
@@ -133,22 +147,59 @@ function CollegeForm({ onDialogOpenChange }) {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>University</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a University" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {university && university.map((university) => (
-                      <SelectItem key={university.id} value={university.id}>{university.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        className={cn(
+                          "w-full justify-between",
+                          !field.value && "text-muted-foreground"
+                        )}
+                      >
+                        {field.value
+                          ? universities.find(
+                              (university) => university === field.value
+                            )
+                          : "Select university"}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+
+                  <PopoverContent className="w-full p-0">
+                    <Command>
+                      <CommandInput placeholder="Search university..." />
+                      <CommandEmpty>No university found.</CommandEmpty>
+                      <CommandGroup>
+                        <CommandList>
+                          {universities.map((university) => {
+                            return (
+                              <CommandItem
+                                value={university}
+                                key={university}
+                                onSelect={() =>
+                                  form.setValue("university", university)
+                                }
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    university === field.value
+                                      ? "opacity-100"
+                                      : "opacity-0"
+                                  )}
+                                />
+                                {university}
+                              </CommandItem>
+                            );
+                          })}
+                        </CommandList>
+                      </CommandGroup>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </FormItem>
             )}
           />
@@ -171,7 +222,7 @@ function CollegeForm({ onDialogOpenChange }) {
                     <SelectItem value="Active">Active</SelectItem>
                     <SelectItem value="Not-Active">Not Active</SelectItem>
                   </SelectContent>
-                </Select> 
+                </Select>
                 <FormMessage />
               </FormItem>
             )}

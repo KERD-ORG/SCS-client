@@ -10,19 +10,20 @@ export async function verifyToken(token, refreshToken) {
   try {
     const decoded = jwtDecode(token);
     const currentTime = Date.now() / 1000;
-
     if (decoded.exp < currentTime) {
+
       if (!refreshToken) {
         return { authorized: false };
       }
+      
       const res = await api.post('/api/token/refresh/', { refresh: refreshToken });
-
+      
       if (res.status === 200) {
         // Return new access token to update in the client
-        Cookie.set('ACCESS_TOKEN', res.data.access, { expires: 1 }); // Expires in 1 day
+        Cookie.set('ACCESS_TOKEN', res.data.access, { expires: 7 }); // Expires in 1 day
+        Cookie.set('REFRESH_TOKEN', res.data.refresh, { expires: 1 });
         return { authorized: true, newToken: res.data.access };
       }
-
       return { authorized: false };
     }
 

@@ -35,8 +35,8 @@ export default function LoginForm() {
         password: e.target["password"].value,
       });
       if (res.status === 200) {
-        Cookie.set("ACCESS_TOKEN", res.data.token.access, { expires: 1 }); // Expires in 1 day
-        Cookie.set("REFRESH_TOKEN", res.data.token.refresh, { expires: 7 }); // Expires in 7 days
+        Cookie.set("ACCESS_TOKEN", res.data.token.access, { expires: 7 }); // Expires in 1 day
+        Cookie.set("REFRESH_TOKEN", res.data.token.refresh, { expires: 1 }); // Expires in 7 days
         router.replace("/");
       }
     } catch (error) {

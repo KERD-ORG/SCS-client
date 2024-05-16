@@ -38,10 +38,8 @@ import { z } from "zod";
 import { cn } from "@/lib/utils";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { toast } from "sonner";
-import axios from 'axios';
-import { add } from "date-fns";
+import axios from "axios";
 import cookies from "js-cookie";
-
 
 const formSchema = z.object({
   name: z
@@ -74,7 +72,6 @@ function UniversityForm({ onDialogOpenChange }) {
       setCountries(data.map((val) => val.name));
     })();
   }, []);
-
 
   // University api call
   const UniversityformSubmit = async (values) => {
@@ -113,7 +110,6 @@ function UniversityForm({ onDialogOpenChange }) {
       setLoading(false);
     }
   };
-  
 
   const onCountrySelect = async (form, country) => {
     form.setValue("country", country);

@@ -2,6 +2,14 @@
 
 import { Button } from "@/components/ui/button";
 import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
   Form,
   FormControl,
   FormField,
@@ -9,6 +17,12 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Check, ChevronsUpDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -22,10 +36,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import axios from "axios";
-import {useEffect, useState} from 'react';
+import { useEffect, useState } from "react";
 import cookies from "js-cookie";
 import { toast } from "sonner";
-
+import { cn } from "@/lib/utils";
 
 const formSchema = z.object({
   name: z
@@ -47,40 +61,55 @@ const formSchema = z.object({
 
 function DepartmentForm({ onDialogOpenChange }) {
   const form = useForm({ resolver: zodResolver(formSchema) });
-  const [colleges, setColleges] = useState("");
-  const [campuses, setCampuses] = useState("");
+  const [colleges, setColleges] = useState([]);
+  const [campuses, setCampuses] = useState([]);
+  const token = cookies.get("ACCESS_TOKEN");
 
   useEffect(() => {
-    const fetchColleges = async () => {
-       const res = await axios.get("http://localhost:8000/colleges/").then((res) => {
-         setColleges(res.data);
-       })
-       const res1 = await axios.get("http://localhost:8000/campuses/").then((res) => {
-         setCampuses(res.data);
-       })
-    }
-    fetchColleges()
-  }, [])
+    const fetchCollegesAndCampuses = async () => {
+      try {
+        const [collegesResponse, campusesResponse] = await Promise.all([
+          axios.get("http://localhost:8000/colleges/", {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          axios.get("http://localhost:8000/campuses/", {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+        ]);
+
+        setColleges(collegesResponse.data.map((val) => val.name));
+        setCampuses(campusesResponse.data.map((val) => val.name));
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        toast(error.message);
+      }
+    };
+
+    fetchCollegesAndCampuses();
+  }, []);
 
   const DeptfromSubmit = async (values) => {
-    console.log(values);
     try {
       const token = cookies.get("ACCESS_TOKEN");
-      console.log(token);
-      const res = await axios.post("http://localhost:8000/departments/new/", {
-        name: values.name,
-        college: values.college,
-        campus: values.campus,
-        web_address: values.web_address,
-        address: values.address,
-        statement: values.statement,
-        status: values.status,
-      } , {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+
+      const res = await axios.post(
+        "http://localhost:8000/departments/new/",
+        {
+          name: values.name,
+          college: values.college,
+          campus: values.campus,
+          web_address: values.web_address,
+          address: values.address,
+          statement: values.statement,
+          status: values.status,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
         }
-      })
+      );
       console.log("response", res);
       if (res.status === 201) {
         toast.success("Department created successfully");
@@ -88,12 +117,11 @@ function DepartmentForm({ onDialogOpenChange }) {
       } else {
         toast.error("Something went wrong");
       }
-
     } catch (error) {
       console.log(error);
       toast.error("Something went wrong");
     }
-  }
+  };
 
   return (
     <div className="mb-1.5 mt-6">
@@ -115,30 +143,61 @@ function DepartmentForm({ onDialogOpenChange }) {
               </FormItem>
             )}
           />
-           <FormField
+          <FormField
             control={form.control}
             name="campus"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Campus</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select campus" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {
-                      campuses && campuses.map((campus) => (
-                        <SelectItem key={campus.id} value={campus.id}>{campus.name}</SelectItem>
-                      ))
-                    }
-                  </SelectContent>
-                </Select>
-                <FormMessage />
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        className={cn(
+                          "w-full justify-between",
+                          !field.value && "text-muted-foreground"
+                        )}
+                      >
+                        {field.value
+                          ? campuses.find((campus) => campus === field.value)
+                          : "Select campus"}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+
+                  <PopoverContent className="w-full p-0">
+                    <Command>
+                      <CommandInput placeholder="Search campus..." />
+                      <CommandEmpty>No campus found.</CommandEmpty>
+                      <CommandGroup>
+                        <CommandList>
+                          {campuses.map((campus) => {
+                            return (
+                              <CommandItem
+                                value={campus}
+                                key={campus}
+                                onSelect={() => form.setValue("campus", campus)}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    campus === field.value
+                                      ? "opacity-100"
+                                      : "opacity-0"
+                                  )}
+                                />
+                                {campus}
+                              </CommandItem>
+                            );
+                          })}
+                        </CommandList>
+                      </CommandGroup>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </FormItem>
             )}
           />
@@ -148,24 +207,57 @@ function DepartmentForm({ onDialogOpenChange }) {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>College</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a college" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {
-                     colleges && colleges.map((college) => (
-                      <SelectItem key={college.id} value={college.id}>{college.name}</SelectItem>
-                      ))
-                    }
-                  </SelectContent>
-                </Select>
-                <FormMessage />
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        className={cn(
+                          "w-full justify-between",
+                          !field.value && "text-muted-foreground"
+                        )}
+                      >
+                        {field.value
+                          ? colleges.find((college) => college === field.value)
+                          : "Select college"}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+
+                  <PopoverContent className="w-full p-0">
+                    <Command>
+                      <CommandInput placeholder="Search college..." />
+                      <CommandEmpty>No college found.</CommandEmpty>
+                      <CommandGroup>
+                        <CommandList>
+                          {colleges.map((college) => {
+                            return (
+                              <CommandItem
+                                value={college}
+                                key={college}
+                                onSelect={() =>
+                                  form.setValue("college", college)
+                                }
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    college === field.value
+                                      ? "opacity-100"
+                                      : "opacity-0"
+                                  )}
+                                />
+                                {college}
+                              </CommandItem>
+                            );
+                          })}
+                        </CommandList>
+                      </CommandGroup>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </FormItem>
             )}
           />

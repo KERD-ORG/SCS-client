@@ -1,6 +1,14 @@
 "use client";
 import { Button } from "@/components/ui/button";
 import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
   Form,
   FormControl,
   FormField,
@@ -8,6 +16,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { Check, ChevronsUpDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -26,7 +35,9 @@ import { z } from "zod";
 import { Calendar } from "../ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import axios from "axios";
-
+import { useEffect, useState } from "react";
+import cookies from "js-cookie";
+import { toast } from "sonner";
 
 const formSchema = z.object({
   name: z
@@ -52,40 +63,72 @@ const formSchema = z.object({
 
 function FundingForm({ onDialogOpenChange }) {
   const form = useForm({ resolver: zodResolver(formSchema) });
+  const token = cookies.get("ACCESS_TOKEN");
+  const [colleges, setColleges] = useState([]);
+  const [campuses, setCampuses] = useState([]);
+  const [departments, setDepartments] = useState([]);
 
- const fundingformSubmit = async (data) => {
-   console.log(data);
-   const formattedStartDate = format(data.start_date, "yyyy-MM-dd");
-   const formattedEndDate = format(data.end_date, "yyyy-MM-dd");
-   try {
-    const res = await axios
-    .post("https://scs-backend.herokuapp.com/api/funding", {
-     name: data.name,
-     start_date: formattedStartDate,
-     end_date: formattedEndDate,
-     funding_type: data.funding_type,
-     number_of_positions: data.position,
-     department: data.department,
-     campus: data.campus,
-     college: data.college,
-     originator: data.originator,
-     benefits: data.benefits,
-     statement: data.statement,
-     status: data.status,
-     amount: data.amount,
-    }) 
-    console.log(res);
-    if (res.status === 200) {
-      onDialogOpenChange(false);
-      toast.success("Funding created successfully");
-    } else {
-      toast.error("Something went wrong");
+  useEffect(() => {
+    (async function () {
+      try {
+        const [collegesResponse, campusesResponse, departmentsResponse] =
+          await Promise.all([
+            axios.get("http://localhost:8000/colleges/", {
+              headers: { Authorization: `Bearer ${token}` },
+            }),
+            axios.get("http://localhost:8000/campuses/", {
+              headers: { Authorization: `Bearer ${token}` },
+            }),
+            axios.get("http://localhost:8000/departments/", {
+              headers: { Authorization: `Bearer ${token}` },
+            }),
+          ]);
+
+        setColleges(collegesResponse.data.map((val) => val.name));
+        setCampuses(campusesResponse.data.map((val) => val.name));
+        setDepartments(departmentsResponse.data.map((val) => val.name));
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        toast(error.message);
+      }
+    })();
+  }, []);
+
+  const fundingformSubmit = async (data) => {
+    const formattedStartDate = format(data.start_date, "yyyy-MM-dd");
+    const formattedEndDate = format(data.end_date, "yyyy-MM-dd");
+    try {
+      const res = await axios.post(
+        "http://localhost:8000/fundings/new/",
+        {
+          name: data.name,
+          start_date: formattedStartDate,
+          end_date: formattedEndDate,
+          funding_type: data.funding_type,
+          number_of_positions: data.position,
+          department: data.department,
+          campus: data.campus,
+          college: data.college,
+          // originator: data.originator,
+          // benefits: data.benefits,
+          statement: data.statement,
+          status: data.status,
+          // amount: data.amount,
+        }, {
+          headers: {Authorization: `Bearer ${token}`}
+        }
+      );
+      console.log(res);
+      if (res.status === 201) {
+        onDialogOpenChange(false);
+        toast.success("Funding created successfully");
+      } else {
+        toast.error("Something went wrong");
+      }
+    } catch (error) {
+      console.log(error);
     }
-   } catch (error) {
-     console.log(error);
-   } 
- }
-
+  };
 
   return (
     <div className="mb-1.5 mt-6">
@@ -137,9 +180,7 @@ function FundingForm({ onDialogOpenChange }) {
                       mode="single"
                       selected={field.value}
                       onSelect={field.onChange}
-                      disabled={(date) =>
-                        date > new Date() || date < new Date("1900-01-01")
-                      }
+                      disabled={(date) => date < new Date("1900-01-01")}
                       initialFocus
                       className={"w-full"}
                     />
@@ -179,9 +220,7 @@ function FundingForm({ onDialogOpenChange }) {
                       mode="single"
                       selected={field.value}
                       onSelect={field.onChange}
-                      disabled={(date) =>
-                        date > new Date() || date < new Date("1900-01-01")
-                      }
+                      disabled={(date) => date < new Date("1900-01-01")}
                       initialFocus
                       className={"w-full"}
                     />
@@ -322,8 +361,8 @@ function FundingForm({ onDialogOpenChange }) {
                       <SelectValue placeholder="Select status" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="not-active">Not Active</SelectItem>
+                      <SelectItem value="Active">Active</SelectItem>
+                      <SelectItem value="Inactive">Not Active</SelectItem>
                     </SelectContent>
                   </Select>
                 </FormControl>
@@ -335,23 +374,57 @@ function FundingForm({ onDialogOpenChange }) {
             control={form.control}
             name="campus"
             render={({ field }) => (
-              <FormItem className="flex flex-col gap-1">
+              <FormItem>
                 <FormLabel>Campus</FormLabel>
-                <FormControl>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a campus" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="campus1">Campus 1</SelectItem>
-                      <SelectItem value="campus2">Campus 2</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </FormControl>
-                <FormMessage />
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        className={cn(
+                          "w-full justify-between",
+                          !field.value && "text-muted-foreground"
+                        )}
+                      >
+                        {field.value
+                          ? campuses.find((campus) => campus === field.value)
+                          : "Select campus"}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+
+                  <PopoverContent className="w-full p-0">
+                    <Command>
+                      <CommandInput placeholder="Search campus..." />
+                      <CommandEmpty>No campus found.</CommandEmpty>
+                      <CommandGroup>
+                        <CommandList>
+                          {campuses.map((campus) => {
+                            return (
+                              <CommandItem
+                                value={campus}
+                                key={campus}
+                                onSelect={() => form.setValue("campus", campus)}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    campus === field.value
+                                      ? "opacity-100"
+                                      : "opacity-0"
+                                  )}
+                                />
+                                {campus}
+                              </CommandItem>
+                            );
+                          })}
+                        </CommandList>
+                      </CommandGroup>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </FormItem>
             )}
           />
@@ -359,23 +432,59 @@ function FundingForm({ onDialogOpenChange }) {
             control={form.control}
             name="college"
             render={({ field }) => (
-              <FormItem className="flex flex-col gap-1">
+              <FormItem>
                 <FormLabel>College</FormLabel>
-                <FormControl>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a college" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="college1">College 1</SelectItem>
-                      <SelectItem value="college2">College 2</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </FormControl>
-                <FormMessage />
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        className={cn(
+                          "w-full justify-between",
+                          !field.value && "text-muted-foreground"
+                        )}
+                      >
+                        {field.value
+                          ? colleges.find((college) => college === field.value)
+                          : "Select college"}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+
+                  <PopoverContent className="w-full p-0">
+                    <Command>
+                      <CommandInput placeholder="Search college..." />
+                      <CommandEmpty>No college found.</CommandEmpty>
+                      <CommandGroup>
+                        <CommandList>
+                          {colleges.map((college) => {
+                            return (
+                              <CommandItem
+                                value={college}
+                                key={college}
+                                onSelect={() =>
+                                  form.setValue("college", college)
+                                }
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    college === field.value
+                                      ? "opacity-100"
+                                      : "opacity-0"
+                                  )}
+                                />
+                                {college}
+                              </CommandItem>
+                            );
+                          })}
+                        </CommandList>
+                      </CommandGroup>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </FormItem>
             )}
           />
@@ -383,23 +492,59 @@ function FundingForm({ onDialogOpenChange }) {
             control={form.control}
             name="department"
             render={({ field }) => (
-              <FormItem className="flex flex-col gap-1">
+              <FormItem>
                 <FormLabel>Department</FormLabel>
-                <FormControl>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a department" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="department1">Department 1</SelectItem>
-                      <SelectItem value="department2">Department 2</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </FormControl>
-                <FormMessage />
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        className={cn(
+                          "w-full justify-between",
+                          !field.value && "text-muted-foreground"
+                        )}
+                      >
+                        {field.value
+                          ? departments.find((department) => department === field.value)
+                          : "Select department"}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+
+                  <PopoverContent className="w-full p-0">
+                    <Command>
+                      <CommandInput placeholder="Search department..." />
+                      <CommandEmpty>No department found.</CommandEmpty>
+                      <CommandGroup>
+                        <CommandList>
+                          {departments.map((department) => {
+                            return (
+                              <CommandItem
+                                value={department}
+                                key={department}
+                                onSelect={() =>
+                                  form.setValue("department", department)
+                                }
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    department === field.value
+                                      ? "opacity-100"
+                                      : "opacity-0"
+                                  )}
+                                />
+                                {department}
+                              </CommandItem>
+                            );
+                          })}
+                        </CommandList>
+                      </CommandGroup>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </FormItem>
             )}
           />

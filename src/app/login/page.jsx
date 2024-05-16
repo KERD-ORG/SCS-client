@@ -25,28 +25,36 @@ export default function LoginForm() {
     if (token) {
       (async function () {
         try {
-          const res = await axios.get("http://localhost:8000/verify-token/", {
+          const res = await axios.get("http://127.0.0.1:8000/verify-token/", {
             headers: { Authorization: `Bearer ${token}` },
           });
           if (res.status === 200) router.replace("/university");
+          else router.replace("/login");
         } catch (error) {
           console.log(error);
         }
       })();
     }
+  
+     verifyToken();
   }, [router]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log(e.target["username"].value, e.target["password"].value);
     try {
-      const res = await axios.post("http://localhost:8000/login/", {
+      const res = await axios.post("http://127.0.0.1:8000/login/", {
         username: e.target["username"].value,
-        password: e.target["password"].value,
+        password: e.target["password"].value
       });
+      console.log("response", res);
       if (res.status === 200) {
         Cookie.set("ACCESS_TOKEN", res.data.token.access, { expires: 7 }); // Expires in 1 day
         Cookie.set("REFRESH_TOKEN", res.data.token.refresh, { expires: 1 }); // Expires in 7 days
-        router.replace("/");
+        router.replace("/university");
+        toast("Login successful");
+      } else {
+        toast("Invalid credentials");
       }
     } catch (error) {
       console.log(error);

@@ -25,22 +25,26 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Calendar } from "../ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
+import { useState, useEffect } from "react";
+import axios from "axios";
+import cookies from "js-cookie";
+import { toast } from "sonner";
 
 const formSchema = z
   .object({
     name: z
       .string({ required_error: "Name is required" })
-      .min(2, { message: "Must be 2 or more character long" }),
+      .min(2, { message: "Must be 2 or more characters long" }),
     campus: z.string({ required_error: "Campus is required" }),
     college: z.string({ required_error: "College is required" }),
     department: z.string({ required_error: "Department is required" }),
     faculty_type: z.string({ required_error: "Faculty Type is required" }),
     statement: z
       .string({ required_error: "Statement is required" })
-      .min(2, { message: "Must be 2 or more character long" }),
+      .min(2, { message: "Must be 2 or more characters long" }),
     address: z
       .string({ required_error: "Address is required" })
-      .min(2, { message: "Must be 2 or more character long" }),
+      .min(2, { message: "Must be 2 or more characters long" }),
     status: z.string({ required_error: "Status is required" }),
     web_address: z
       .string({ required_error: "Url is required" })
@@ -48,38 +52,77 @@ const formSchema = z
         message: "Invalid url",
       })
       .optional(),
-    password: z
-      .string()
-      .min(8, { message: "Password is too short" })
-      .max(20, { message: "Password is too long" }),
-    confirm_password: z.string(),
     email: z.string({ required_error: "Url is required" }).email({
       message: "Invalid email",
     }),
   })
-  .refine(
-    (data) => {
-      console.log(data);
-      return data.password === data.confirm_password;
-    },
-    {
-      message: "Passwords do not match",
-      path: ["confirm_password"], // path of error
-    }
-  );
 
 function FacultyMemberForm({ onDialogOpenChange }) {
   const form = useForm({ resolver: zodResolver(formSchema) });
+  const [departments, setDepartments] = useState("");
+  const [campuses, setCampuses] = useState("");
+  const [colleges, setColleges] = useState("");
 
-  function onSubmit(values) {
-    console.log(values);
-  }
+  useEffect(() => {
+    const fetchData = async () => {
+      const campusResp = await axios.get("http://127.0.0.1:8000/campuses/");
+      setCampuses(campusResp.data);
+      const collegeResp = await axios.get("http://127.0.0.1:8000/colleges/");
+      setColleges(collegeResp.data);
+      const deptResp = await axios.get("http://127.0.0.1:8000/departments/");
+      setDepartments(deptResp.data);
+    };
+    fetchData();
+  }, []);
+
+  const FacultyMemberFormSubmit = async (data) => {
+    console.log("data taken");
+    console.log("data", data);
+    try {
+      const token = cookies.get("ACCESS_TOKEN");
+      const res = await axios.post(
+        "http://localhost:8000/facultys/new/",
+        {
+          name: data.name,
+          email: data.email,
+          department: data.department,
+          campus: data.campus,
+          college: data.college,
+          web_address: data.web_address,
+          address: data.address,
+          statement: data.statement,
+          faculty_type: data.faculty_type,
+          status: data.status,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      console.log("response", res);
+      if (res.status === 201) {
+        toast.success("Department created successfully");
+        onDialogOpenChange(false);
+      } else {
+        toast.error(response.data.message);
+      }
+    } catch (error) {
+      console.log(" dadta taken here")
+      if(error.response.data){
+        toast.error(error.response.data.email[0]);
+      } else {
+        toast.error(error.message);
+      }
+      }
+  };
 
   return (
     <div className="mb-1.5 mt-6">
       <Form {...form}>
         <form
-          onSubmit={form.handleSubmit(onSubmit)}
+          onSubmit={form.handleSubmit(FacultyMemberFormSubmit)}
           className="grid grid-cols-2 gap-8"
         >
           <FormField
@@ -110,40 +153,6 @@ function FacultyMemberForm({ onDialogOpenChange }) {
           />
           <FormField
             control={form.control}
-            name="password"
-            render={({ field }) => (
-              <FormItem className="flex flex-col gap-1">
-                <FormLabel>Password</FormLabel>
-                <FormControl>
-                  <Input
-                    placeholder="Enter Password"
-                    type="password"
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="confirm_password"
-            render={({ field }) => (
-              <FormItem className="flex flex-col gap-1">
-                <FormLabel>Confirm Password</FormLabel>
-                <FormControl>
-                  <Input
-                    placeholder="Enter Password"
-                    type="password"
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
             name="faculty_type"
             render={({ field }) => (
               <FormItem className="flex flex-col gap-1">
@@ -162,11 +171,7 @@ function FacultyMemberForm({ onDialogOpenChange }) {
               <FormItem className="flex flex-col gap-1">
                 <FormLabel>Web Address</FormLabel>
                 <FormControl>
-                  <Input
-                    placeholder="Enter Web Address"
-                    type="url"
-                    {...field}
-                  />
+                  <Input placeholder="Enter Web Address" type="url" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -187,8 +192,12 @@ function FacultyMemberForm({ onDialogOpenChange }) {
                       <SelectValue placeholder="Select campus" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="inactive">Inactive</SelectItem>
+                      {campuses &&
+                        campuses.map((campus) => (
+                          <SelectItem key={campus.id} value={campus.id}>
+                            {campus.name}
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                 </FormControl>
@@ -211,8 +220,12 @@ function FacultyMemberForm({ onDialogOpenChange }) {
                       <SelectValue placeholder="Select college" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="inactive">Inactive</SelectItem>
+                      {colleges &&
+                        colleges.map((college) => (
+                          <SelectItem key={college.id} value={college.id}>
+                            {college.name}
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                 </FormControl>
@@ -235,8 +248,12 @@ function FacultyMemberForm({ onDialogOpenChange }) {
                       <SelectValue placeholder="Select department" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="inactive">Inactive</SelectItem>
+                      {departments &&
+                        departments.map((department) => (
+                          <SelectItem key={department.id} value={department.id}>
+                            {department.name}
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                 </FormControl>
@@ -259,8 +276,8 @@ function FacultyMemberForm({ onDialogOpenChange }) {
                       <SelectValue placeholder="Select status" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="inactive">Inactive</SelectItem>
+                      <SelectItem value="Active">Active</SelectItem>
+                      <SelectItem value="Inactive">Inactive</SelectItem>
                     </SelectContent>
                   </Select>
                 </FormControl>
@@ -313,3 +330,4 @@ function FacultyMemberForm({ onDialogOpenChange }) {
 }
 
 export default FacultyMemberForm;
+

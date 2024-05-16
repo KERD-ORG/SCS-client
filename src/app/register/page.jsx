@@ -27,7 +27,7 @@ function Register() {
   const router = useRouter();
   const [userType, setUserType] = useState("student");
 
-  useEffuseEffect(() => {
+  useEffect(() => {
     // Redirect if already authenticated
     const token = Cookie.get("ACCESS_TOKEN");
     if (token) {

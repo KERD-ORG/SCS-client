@@ -1,6 +1,14 @@
 "use client";
 import { Button } from "@/components/ui/button";
 import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
   Form,
   FormControl,
   FormField,
@@ -8,6 +16,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { Check, ChevronsUpDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -19,16 +28,14 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { format } from "date-fns";
-import { CalendarIcon } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Calendar } from "../ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { useState, useEffect } from "react";
 import axios from "axios";
 import cookies from "js-cookie";
 import { toast } from "sonner";
+
 
 const formSchema = z
   .object({
@@ -59,27 +66,39 @@ const formSchema = z
 
 function FacultyMemberForm({ onDialogOpenChange }) {
   const form = useForm({ resolver: zodResolver(formSchema) });
-  const [departments, setDepartments] = useState("");
-  const [campuses, setCampuses] = useState("");
-  const [colleges, setColleges] = useState("");
+  const token = cookies.get("ACCESS_TOKEN");
+  const [colleges, setColleges] = useState([]);
+  const [campuses, setCampuses] = useState([]);
+  const [departments, setDepartments] = useState([]);
 
   useEffect(() => {
-    const fetchData = async () => {
-      const campusResp = await axios.get("http://127.0.0.1:8000/campuses/");
-      setCampuses(campusResp.data);
-      const collegeResp = await axios.get("http://127.0.0.1:8000/colleges/");
-      setColleges(collegeResp.data);
-      const deptResp = await axios.get("http://127.0.0.1:8000/departments/");
-      setDepartments(deptResp.data);
-    };
-    fetchData();
+    (async function () {
+      try {
+        const [collegesResponse, campusesResponse, departmentsResponse] =
+          await Promise.all([
+            axios.get("http://localhost:8000/colleges/", {
+              headers: { Authorization: `Bearer ${token}` },
+            }),
+            axios.get("http://localhost:8000/campuses/", {
+              headers: { Authorization: `Bearer ${token}` },
+            }),
+            axios.get("http://localhost:8000/departments/", {
+              headers: { Authorization: `Bearer ${token}` },
+            }),
+          ]);
+
+        setColleges(collegesResponse.data.map((val) => val.name));
+        setCampuses(campusesResponse.data.map((val) => val.name));
+        setDepartments(departmentsResponse.data.map((val) => val.name));
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        toast(error.message);
+      }
+    })();
   }, []);
 
   const FacultyMemberFormSubmit = async (data) => {
-    console.log("data taken");
-    console.log("data", data);
     try {
-      const token = cookies.get("ACCESS_TOKEN");
       const res = await axios.post(
         "http://localhost:8000/facultys/new/",
         {
@@ -181,27 +200,57 @@ function FacultyMemberForm({ onDialogOpenChange }) {
             control={form.control}
             name="campus"
             render={({ field }) => (
-              <FormItem className="flex flex-col gap-1">
+              <FormItem>
                 <FormLabel>Campus</FormLabel>
-                <FormControl>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select campus" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {campuses &&
-                        campuses.map((campus) => (
-                          <SelectItem key={campus.id} value={campus.id}>
-                            {campus.name}
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
-                </FormControl>
-                <FormMessage />
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        className={cn(
+                          "w-full justify-between",
+                          !field.value && "text-muted-foreground"
+                        )}
+                      >
+                        {field.value
+                          ? campuses.find((campus) => campus === field.value)
+                          : "Select campus"}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+
+                  <PopoverContent className="w-full p-0">
+                    <Command>
+                      <CommandInput placeholder="Search campus..." />
+                      <CommandEmpty>No campus found.</CommandEmpty>
+                      <CommandGroup>
+                        <CommandList>
+                          {campuses.map((campus) => {
+                            return (
+                              <CommandItem
+                                value={campus}
+                                key={campus}
+                                onSelect={() => form.setValue("campus", campus)}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    campus === field.value
+                                      ? "opacity-100"
+                                      : "opacity-0"
+                                  )}
+                                />
+                                {campus}
+                              </CommandItem>
+                            );
+                          })}
+                        </CommandList>
+                      </CommandGroup>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </FormItem>
             )}
           />
@@ -209,27 +258,59 @@ function FacultyMemberForm({ onDialogOpenChange }) {
             control={form.control}
             name="college"
             render={({ field }) => (
-              <FormItem className="flex flex-col gap-1">
+              <FormItem>
                 <FormLabel>College</FormLabel>
-                <FormControl>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select college" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {colleges &&
-                        colleges.map((college) => (
-                          <SelectItem key={college.id} value={college.id}>
-                            {college.name}
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
-                </FormControl>
-                <FormMessage />
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        className={cn(
+                          "w-full justify-between",
+                          !field.value && "text-muted-foreground"
+                        )}
+                      >
+                        {field.value
+                          ? colleges.find((college) => college === field.value)
+                          : "Select college"}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+
+                  <PopoverContent className="w-full p-0">
+                    <Command>
+                      <CommandInput placeholder="Search college..." />
+                      <CommandEmpty>No college found.</CommandEmpty>
+                      <CommandGroup>
+                        <CommandList>
+                          {colleges.map((college) => {
+                            return (
+                              <CommandItem
+                                value={college}
+                                key={college}
+                                onSelect={() =>
+                                  form.setValue("college", college)
+                                }
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    college === field.value
+                                      ? "opacity-100"
+                                      : "opacity-0"
+                                  )}
+                                />
+                                {college}
+                              </CommandItem>
+                            );
+                          })}
+                        </CommandList>
+                      </CommandGroup>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </FormItem>
             )}
           />
@@ -237,27 +318,59 @@ function FacultyMemberForm({ onDialogOpenChange }) {
             control={form.control}
             name="department"
             render={({ field }) => (
-              <FormItem className="flex flex-col gap-1">
+              <FormItem>
                 <FormLabel>Department</FormLabel>
-                <FormControl>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select department" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {departments &&
-                        departments.map((department) => (
-                          <SelectItem key={department.id} value={department.id}>
-                            {department.name}
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
-                </FormControl>
-                <FormMessage />
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        className={cn(
+                          "w-full justify-between",
+                          !field.value && "text-muted-foreground"
+                        )}
+                      >
+                        {field.value
+                          ? departments.find((department) => department === field.value)
+                          : "Select department"}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+
+                  <PopoverContent className="w-full p-0">
+                    <Command>
+                      <CommandInput placeholder="Search department..." />
+                      <CommandEmpty>No department found.</CommandEmpty>
+                      <CommandGroup>
+                        <CommandList>
+                          {departments.map((department) => {
+                            return (
+                              <CommandItem
+                                value={department}
+                                key={department}
+                                onSelect={() =>
+                                  form.setValue("department", department)
+                                }
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    department === field.value
+                                      ? "opacity-100"
+                                      : "opacity-0"
+                                  )}
+                                />
+                                {department}
+                              </CommandItem>
+                            );
+                          })}
+                        </CommandList>
+                      </CommandGroup>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </FormItem>
             )}
           />

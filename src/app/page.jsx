@@ -5,7 +5,7 @@ import { cookies } from 'next/headers'
 export default async function Home() {
   const accessToken = cookies().get('ACCESS_TOKEN')
   const refreshToken = cookies().get('REFRESH_TOKEN')
-  if(!accessToken) redirect('/login')
+  if(!accessToken || !refreshToken) redirect('/login')
   
   const {authorized} = await verifyToken(accessToken.value, refreshToken.value)
 

@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 async function AdminLayout({ children }) {
   const accessToken = cookies().get('ACCESS_TOKEN')
   const refreshToken = cookies().get('REFRESH_TOKEN')
-  if(!accessToken) redirect('/login')
+  if(!accessToken || !refreshToken) redirect('/login')
   
   const {authorized} = await verifyToken(accessToken.value, refreshToken.value)
   if(!authorized) redirect('/login')

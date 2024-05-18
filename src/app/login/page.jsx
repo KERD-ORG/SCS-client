@@ -36,7 +36,6 @@ export default function LoginForm() {
       })();
     }
   
-     verifyToken();
   }, [router]);
 
   const handleSubmit = async (e) => {

@@ -40,6 +40,7 @@ import { Check, ChevronsUpDown } from "lucide-react";
 import { toast } from "sonner";
 import axios from "axios";
 import cookies from "js-cookie";
+import { useRouter } from "next/navigation";
 
 const formSchema = z.object({
   name: z
@@ -62,6 +63,7 @@ function UniversityForm({ onDialogOpenChange }) {
   const [selectedCountry, setSelectedCountry] = useState("");
   const [states, setStates] = useState();
   const [loading, setLoading] = useState(false);
+  const router = useRouter()
 
   useEffect(() => {
     (async function () {
@@ -100,6 +102,7 @@ function UniversityForm({ onDialogOpenChange }) {
       if (res.status === 201) {
         toast.success("University created successfully");
         onDialogOpenChange(false);
+        router.refresh()
       } else {
         throw new Error("Failed to create university");
       }

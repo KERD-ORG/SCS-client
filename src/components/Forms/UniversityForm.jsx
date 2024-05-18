@@ -57,13 +57,24 @@ const formSchema = z.object({
   status: z.string({ required_error: "State is required" }),
 });
 
-function UniversityForm({ onDialogOpenChange }) {
-  const form = useForm({ resolver: zodResolver(formSchema) });
+function UniversityForm({ onDialogOpenChange, data }) {
+  const form = useForm({
+    resolver: zodResolver(formSchema),
+    defaultValues: data || {
+      name: "",
+      web_address: "",
+      country: "",
+      state: "",
+      statement: "",
+      status: "",
+    },
+  });
+  const { handleSubmit, setValue, reset } = form;
   const [countries, setCountries] = useState([]);
   const [selectedCountry, setSelectedCountry] = useState("");
   const [states, setStates] = useState();
   const [loading, setLoading] = useState(false);
-  const router = useRouter()
+  const router = useRouter();
 
   useEffect(() => {
     (async function () {
@@ -75,36 +86,74 @@ function UniversityForm({ onDialogOpenChange }) {
     })();
   }, []);
 
+  useEffect(() => {
+    // If data is provided, set the form values (edit mode)
+    if (data) {
+      (async function () {
+        Object.keys(data).forEach((key) => {
+          setValue(key, data[key]);
+        });
+        setLoading(true)
+        try {
+          const res = await fetch(
+            "https://countriesnow.space/api/v0.1/countries/states",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ country: data.country }),
+            }
+          );
+          const dd = await res.json();
+          if (dd.error) throw new Error(dd.msg);
+          setStates(dd.data.states.map((val) => val.name));
+        } catch (error) {
+          toast(error.message);
+        }
+        setLoading(false)
+      })();
+    }
+  }, [data, setValue]);
+
   // University api call
   const UniversityformSubmit = async (values) => {
+    console.log("first");
     const token = cookies.get("ACCESS_TOKEN");
-    console.log(token);
     setLoading(true);
     try {
-      const res = await axios.post(
-        "http://127.0.0.1:8000/universities/new/",
-        {
-          name: values.name,
-          web_address: values.web_address,
-          country: values.country,
-          state: values.state,
-          statement: values.statement,
-          status: values.status,
+      const url = data
+        ? `http://127.0.0.1:8000/universities/${data.id}/modify/`
+        : "http://127.0.0.1:8000/universities/new/";
+      const method = data ? "put" : "post";
+
+      const requestBody = {
+        name: values.name,
+        web_address: values.web_address,
+        country: values.country,
+        state: values.state,
+        statement: values.statement,
+        status: values.status,
+        ...(data && { id: data.id }), // Include the id in the request body if in edit mode
+      };
+
+      const res = await axios[method](url, requestBody, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      console.log("response", res);
-      if (res.status === 201) {
-        toast.success("University created successfully");
+      });
+
+      if (res.status === 201 || res.status === 200) {
+        toast.success(
+          data
+            ? "University updated successfully"
+            : "University created successfully"
+        );
         onDialogOpenChange(false);
-        router.refresh()
+        router.refresh();
       } else {
-        throw new Error("Failed to create university");
+        throw new Error("Failed to submit form");
       }
     } catch (error) {
       console.error("Error submitting form:", error);
@@ -342,7 +391,10 @@ function UniversityForm({ onDialogOpenChange }) {
             <Button
               variant="outline"
               size="lg"
-              onClick={() => onDialogOpenChange(false)}
+              onClick={(e) => {
+                e.preventDefault();
+                onDialogOpenChange(false);
+              }}
             >
               Cancel
             </Button>

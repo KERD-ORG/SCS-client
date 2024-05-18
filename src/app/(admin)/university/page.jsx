@@ -30,7 +30,7 @@ export default async function UniversityWrapper({ params, searchParams }) {
       <University />
       <div className="h-full">
         <Suspense fallback={<Loading />}>
-          <DataTable data={data} />
+          <DataTable data={data} entity={'university'} />
         </Suspense>
       </div>
     </div>

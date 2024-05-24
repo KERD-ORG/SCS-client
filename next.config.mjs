@@ -1,13 +1,14 @@
 /** @type {import('next').NextConfig} */
+
+export const i18n = {
+  defaultLocale: 'en',
+  locales: ['en', 'bn', 'fr'],
+};
+
 const nextConfig = {
-  images: { remotePatterns: [{ protocol: "https", hostname: "github.com" }] },
-  webpack: function (config, context) {
-    config.watchOptions = {
-        poll: 1000,
-        aggregateTimeout: 300,
-    };
-    return config;
-  }
+
+i18n,
+
 };
 
 export default nextConfig;

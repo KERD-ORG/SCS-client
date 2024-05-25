@@ -43,7 +43,7 @@ export default function Signin() {
       const data = await response.json();
       console.log("Login successful", data);
       Cookie.set("token", data.token, { expires: 7 });
-      window.location.href = "/universities";
+      window.location.href = "/educational_organizations";
     } else {
       setError("Login failed. Please check your username and password.");
     }

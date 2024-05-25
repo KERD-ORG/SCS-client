@@ -10,7 +10,7 @@ import { useUserPermissions } from "../../contexts/UserPermissionsContext";
 import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 
-export default function UniversityList() {
+export default function EducationalOrganizationList() {
   const [universities, setUniversities] = useState([]);
   const [selectedUniversity, setSelectedUniversity] = useState(null);
   const [viewUniversity, setViewUniversity] = useState(null);
@@ -27,6 +27,7 @@ export default function UniversityList() {
   const { t } = useTranslation("common");
 
   const permissions = useUserPermissions();
+
   const canAdd = permissions.some(
     (permission) => permission.codename === "add_university"
   );
@@ -48,17 +49,21 @@ export default function UniversityList() {
   }
 
   function fetchUniversities() {
-    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/universities/`, {
-      headers: {
-        Authorization: `Token ${token}`,
-      },
-    })
+    fetch(
+      `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/educational_organizations/`,
+      {
+        headers: {
+          Authorization: `Token ${token}`,
+        },
+      }
+    )
       .then((response) => {
-        console.log(response)
-        return response.json()
+        return response.json();
       })
       .then((data) => setUniversities(data))
-      .catch((error) => console.error("Error fetching universities:", error));
+      .catch((error) =>
+        console.error("Error fetching educational organizations:", error)
+      );
   }
 
   useEffect(() => {
@@ -71,26 +76,29 @@ export default function UniversityList() {
 
   function deleteUniversity(id) {
     const isConfirmed = confirm(
-      "Are you sure you want to delete this university?"
+      "Are you sure you want to delete this educational organization?"
     );
 
     if (isConfirmed) {
       const token = getToken();
-      fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/universities/${id}/`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Token ${token}`,
-        },
-        credentials: "include",
-      })
+      fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/educational_organizations/${id}/`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Token ${token}`,
+          },
+          credentials: "include",
+        }
+      )
         .then((response) => {
           console.log(response);
           if (response.ok) {
             setUniversities(universities.filter((uni) => uni.id !== id));
-            setSuccessMessage("University deleted successfully");
+            setSuccessMessage("Educational organiation deleted successfully");
           } else {
-            console.error("Failed to delete university");
-            setErrorMessage("Failed to delete university");
+            console.error("Failed to delete educational organization");
+            setErrorMessage("Failed to delete educational organization");
           }
         })
         .catch((error) => {
@@ -105,8 +113,8 @@ export default function UniversityList() {
   const handleFormSubmit = (data) => {
     const url =
       formMode === "create"
-        ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/universities/create/`
-        : `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/universities/${selectedUniversity.id}/`;
+        ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/educational_organizations/`
+        : `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/educational_organizations/${selectedUniversity.id}/`;
     const method = formMode === "create" ? "POST" : "PUT";
 
     fetch(url, {
@@ -118,12 +126,15 @@ export default function UniversityList() {
       body: data,
     })
       .then(async (response) => {
+        console.log(response)
         if (!response.ok) {
           if (response.status === 400) {
             const errorData = await response.json();
+            console.log(errorData);
             setFormErrors(errorData);
             throw new Error("Validation failed");
           }
+          
           throw new Error("An error occurred. Please try again.");
         }
         return response.json();
@@ -131,8 +142,8 @@ export default function UniversityList() {
       .then((data) => {
         setSuccessMessage(
           formMode === "create"
-            ? "University created successfully"
-            : "University updated successfully"
+            ? "Educational Organizations created successfully"
+            : "Educational Organizations updated successfully"
         );
         fetchUniversities();
         const offcanvasElement = document.getElementById("add-new-record");
@@ -179,12 +190,14 @@ export default function UniversityList() {
   return (
     <Layout>
       <Head>
-        <title>{t("Universities")}</title>
+        <title>{t("Educational Organizations")}</title>
         <meta name="description" content="Learn more about us." />
       </Head>
 
       <h4 className="py-3 mb-4">
-        <span className="text-muted fw-light">{t("Universities")} /</span>{" "}
+        <span className="text-muted fw-light">
+          {t("Educational Organizations")} /
+        </span>{" "}
         {t("List")}
       </h4>
 
@@ -194,7 +207,7 @@ export default function UniversityList() {
         tabIndex={-1}
         aria-labelledby="addNewRecordLabel"
         aria-hidden="true"
-        style={{width: '500px'}}
+        style={{ width: "500px" }}
       >
         <div className="offcanvas-header">
           <h5 className="offcanvas-title" id="addNewRecordLabel">
@@ -306,8 +319,8 @@ export default function UniversityList() {
                     <td>{university.name}</td>
                     <td>{university.web_address}</td>
                     <td>{university.country}</td>
-                    <td>{university.state}</td>
-                    <td>{university.status}</td>
+                    <td>{university.geo_admin_1}</td>
+                    <td>{university.status ? 'Active' : 'Inactive'}</td>
                     <td>
                       {canEdit && (
                         <button
@@ -363,4 +376,4 @@ export async function getServerSideProps({ locale }) {
   };
 }
 
-UniversityList.layout = "default";
+EducationalOrganizationList.layout = "default";

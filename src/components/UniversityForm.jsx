@@ -1,4 +1,7 @@
 import { useState, useEffect } from "react";
+import ComboBox from "./ComboBox";
+
+const top100Films = ["a", "b", "c", "d"];
 
 export default function UniversityForm({
   mode,
@@ -7,13 +10,37 @@ export default function UniversityForm({
   errors,
 }) {
   const [name, setName] = useState("");
+  const [geo_admin_1, setGeoAdmin] = useState("");
+  const [under_category, setUnderCategory] = useState("");
+  const [country, setCountry] = useState("");
+  const [status, setStatus] = useState("");
+  const [web_address, setWebAdress] = useState("");
   const [statement, setStatement] = useState("");
   const [file, setFile] = useState(null);
+  const [countries, setCountries] = useState([]);
+  const [states, setStates] = useState();
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    (async function () {
+      const res = await fetch(
+        "https://countriesnow.space/api/v0.1/countries/iso"
+      );
+      const { data } = await res.json();
+      setCountries(data.map((val) => val.name));
+    })();
+  }, []);
 
   useEffect(() => {
     if (mode === "edit" && initialData) {
       setName(initialData.name);
       setStatement(initialData.statement);
+      setWebAdress(initialData.web_address);
+      setCountry(initialData.country);
+      setGeoAdmin(initialData.geo_admin_1);
+      setStatus(initialData.status ? "active" : "inactive");
+      setUnderCategory(initialData.under_category);
+      onCountrySelect(initialData.country);
     } else {
       resetForm();
     }
@@ -22,14 +49,37 @@ export default function UniversityForm({
   const resetForm = () => {
     setName("");
     setStatement("");
+    setGeoAdmin("");
+    setUnderCategory("");
+    setCountry("");
+    setWebAdress("");
+    setStatus("");
     setFile(null);
   };
 
   const handleSubmit = (event) => {
     event.preventDefault();
+    if (
+      !name ||
+      !country ||
+      !geo_admin_1 ||
+      !under_category ||
+      !status ||
+      !statement
+    ) {
+      alert("Fill all the required fields");
+      return;
+    }
     const formData = new FormData();
     formData.append("name", name);
+    formData.append("country", country);
+    formData.append("geo_admin_1", geo_admin_1);
+    formData.append("under_category", under_category);
+    formData.append("web_address", web_address);
+    formData.append("status", status === "active");
     formData.append("statement", statement);
+    // formData.append("created_at", new Date().toISOString().split('T')[0]);
+    // formData.append("updated_at", new Date().toISOString().split('T')[0]);
 
     if (file) {
       formData.append("document", file); //
@@ -48,6 +98,29 @@ export default function UniversityForm({
     setFile(event.target.files[0]);
   };
 
+  const onCountrySelect = async (_country) => {
+    setCountry(_country);
+    setLoading(true);
+    try {
+      const res = await fetch(
+        "https://countriesnow.space/api/v0.1/countries/states",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ country: _country }),
+        }
+      );
+      const data = await res.json();
+      if (data.error) throw new Error(data.msg);
+      setStates(data.data.states.map((val) => val.name));
+    } catch (error) {
+      console.log(error.message);
+    }
+    setLoading(false);
+  };
+
   return (
     <form
       onSubmit={handleSubmit}
@@ -56,7 +129,7 @@ export default function UniversityForm({
     >
       <div className="col-sm-12 fv-plugins-icon-container">
         <label className="form-label" htmlFor="name">
-          University Name
+          Organization Name
         </label>
         <div className="input-group input-group-merge has-validation">
           <input
@@ -73,7 +146,114 @@ export default function UniversityForm({
             <div className="invalid-feedback d-block">{errors.name}</div>
           )}
         </div>
+        <div className="fv-plugins-message-container invalid-feedback" />
+      </div>
 
+      <div className="col-sm-12 fv-plugins-icon-container">
+        <label className="form-label" htmlFor="under_category">
+          Category
+        </label>
+        <div className="input-group input-group-merge has-validation">
+          <select
+            id="under_category"
+            className="form-control"
+            value={under_category}
+            onChange={(e) => setUnderCategory(e.target.value)}
+            required
+          >
+            {/* TODO: fetch from backend */}
+            <option value="">Select category</option>
+            <option value="university">University</option>
+          </select>
+          {errors?.under_category && (
+            <div className="invalid-feedback d-block">
+              {errors.under_category}
+            </div>
+          )}
+        </div>
+        <div className="fv-plugins-message-container invalid-feedback" />
+      </div>
+
+      <div className="col-sm-12 fv-plugins-icon-container">
+        <label className="form-label" htmlFor="country">
+          Country
+        </label>
+        <div className="input-group input-group-merge has-validation">
+          <ComboBox
+            data={countries}
+            value={country}
+            setValue={onCountrySelect}
+          />
+          {errors?.country && (
+            <div className="invalid-feedback d-block">{errors.country}</div>
+          )}
+        </div>
+        <div className="fv-plugins-message-container invalid-feedback" />
+      </div>
+
+      {states && (
+        <div className="col-sm-12 fv-plugins-icon-container">
+          <label className="form-label" htmlFor="geo_admin_1">
+            State
+          </label>
+          <div className="input-group input-group-merge has-validation">
+            <ComboBox
+              data={states}
+              value={geo_admin_1}
+              setValue={setGeoAdmin}
+            />
+            {errors?.geo_admin_1 && (
+              <div className="invalid-feedback d-block">
+                {errors.geo_admin_1}
+              </div>
+            )}
+          </div>
+          <div className="fv-plugins-message-container invalid-feedback" />
+        </div>
+      )}
+
+      <div className="col-sm-12 fv-plugins-icon-container">
+        <label className="form-label" htmlFor="web_address">
+          Web Address <span>(optional)</span>
+        </label>
+        <div className="input-group input-group-merge has-validation">
+          <input
+            type="url"
+            id="web_address"
+            className="form-control dt-full-name"
+            name="web_address"
+            placeholder="https://test.com"
+            aria-label="https://test.com"
+            value={web_address}
+            onChange={(e) => setWebAdress(e.target.value)}
+          />
+          {errors?.web_address && (
+            <div className="invalid-feedback d-block">{errors.web_address}</div>
+          )}
+        </div>
+        <div className="fv-plugins-message-container invalid-feedback" />
+      </div>
+
+      <div className="col-sm-12 fv-plugins-icon-container">
+        <label className="form-label" htmlFor="status">
+          Status
+        </label>
+        <div className="input-group input-group-merge has-validation">
+          <select
+            id="status"
+            className="form-control"
+            value={status}
+            onChange={(e) => setStatus(e.target.value)}
+            required
+          >
+            <option value="">Select status</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
+          {errors?.status && (
+            <div className="invalid-feedback d-block">{errors.status}</div>
+          )}
+        </div>
         <div className="fv-plugins-message-container invalid-feedback" />
       </div>
 
@@ -98,7 +278,7 @@ export default function UniversityForm({
 
       <div className="col-sm-12">
         <label className="form-label" htmlFor="fileUpload">
-          Upload Logo
+          Upload Logo <span>(optional)</span>
         </label>
         <input
           type="file"

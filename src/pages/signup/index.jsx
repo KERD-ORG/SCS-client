@@ -10,6 +10,8 @@ export default function Signup() {
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("");
   const [roles, setRoles] = useState([]);
+  const [first_name, setFirstName] = useState("");
+  const [last_name, setLastName] = useState("");
 
   const [errors, setErrors] = useState({});
 
@@ -29,6 +31,7 @@ export default function Signup() {
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/roles/`
       ); // Update with your endpoint
       const data = await response.json();
+      console.log(data);
       setRoles(data);
     };
 
@@ -53,27 +56,32 @@ export default function Signup() {
           email,
           password,
           role,
+          first_name,
+          last_name,
         }),
       }
     );
 
     const data = await response.json();
-
+    console.log(data);
     if (response.ok) {
       setUsername("");
       setEmail("");
       setPassword("");
+      setFirstName("");
+      setLastName("");
       setRole("");
       setErrors({});
       sessionStorage.setItem("registered", "true");
       // Redirect to login
       router.push("/signin");
-      e;
     } else {
       const newErrors = {};
       if (data.username) newErrors.username = data.username.join(" "); // Join multiple error messages with space
       if (data.email) newErrors.email = data.email.join(" ");
       if (data.password) newErrors.password = data.password.join(" ");
+      if (data.first_name) newErrors.first_name = data.first_name.join(" ");
+      if (data.last_name) newErrors.last_name = data.last_name.join(" ");
       setErrors(newErrors);
     }
   };
@@ -193,6 +201,42 @@ export default function Signup() {
               />
               {errors.username && (
                 <div className="text-danger">{errors.username}</div>
+              )}
+            </div>
+            <div className="mb-3">
+              <label htmlFor="first_name" className="form-label">
+                First Name
+              </label>
+              <input
+                type="text"
+                className="form-control"
+                id="first_name"
+                name="first_name"
+                placeholder="Enter your first_name"
+                autoFocus=""
+                value={first_name}
+                onChange={(e) => setFirstName(e.target.value)}
+              />
+              {errors.first_name && (
+                <div className="text-danger">{errors.first_name}</div>
+              )}
+            </div>
+            <div className="mb-3">
+              <label htmlFor="last_name" className="form-label">
+                Last Name
+              </label>
+              <input
+                type="text"
+                className="form-control"
+                id="last_name"
+                name="last_name"
+                placeholder="Enter your last_name"
+                autoFocus=""
+                value={last_name}
+                onChange={(e) => setLastName(e.target.value)}
+              />
+              {errors.last_name && (
+                <div className="text-danger">{errors.last_name}</div>
               )}
             </div>
             <div className="mb-3">

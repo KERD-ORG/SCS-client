@@ -53,7 +53,10 @@ export default function UniversityList() {
         Authorization: `Token ${token}`,
       },
     })
-      .then((response) => response.json())
+      .then((response) => {
+        console.log(response)
+        return response.json()
+      })
       .then((data) => setUniversities(data))
       .catch((error) => console.error("Error fetching universities:", error));
   }

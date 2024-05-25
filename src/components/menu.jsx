@@ -130,7 +130,7 @@ function Menu() {
           >
             <Link href={localizedPath("/universities")} className="menu-link">
               <i className="menu-icon tf-icons bx bxs-school" />
-              <div>{t("Universities")}</div>
+              <div>{t("Educational Organization")}</div>
             </Link>
           </li>
         )}

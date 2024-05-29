@@ -4,52 +4,49 @@ import Head from "next/head";
 import Layout from "../../components/layout_auth";
 import { useRouter } from "next/router";
 import Cookie from "js-cookie";
+import axios from "axios";
+import Loader from "@/components/loader";
+import toast from "react-hot-toast";
 
 export default function Signin() {
   const [showRegistrationSuccess, setShowRegistrationSuccess] = useState(false);
-
+  
   const [rememberMe, setRememberMe] = useState(false);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  useEffect(() => {
-    if (sessionStorage.getItem("registered") === "true") {
-      setShowRegistrationSuccess(true);
-      sessionStorage.removeItem("registered");
-    }
-  }, []);
+  
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/login/`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
+    setLoading(true);
+    try {
+      const response = await axios.post(  
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/login/`, {
           username,
           password,
-          rememberMe,
-        }),
-      }
-    );
-
-    if (response.ok) {
-      const data = await response.json();
-      console.log("Login successful", data);
-      Cookie.set("token", data.token, { expires: 7 });
-      window.location.href = "/educational_organizations";
-    } else {
-      setError("Login failed. Please check your username and password.");
+        } 
+      ).then((response) => {
+        setUsername("")
+        setPassword("")
+        setLoading(false);
+        console.log(response.data);
+        localStorage.setItem("token" , response.data.token);  
+        toast.success(response.data.message);
+      })
+    } catch(error){
+      setLoading(false);
+      setError(error.response.data.error);
     }
+
   };
 
   return (
+    <>
+    {loading && <Loader />}
     <Layout>
       <Head>
         <title>Sign In</title>
@@ -170,7 +167,7 @@ export default function Signin() {
                 placeholder="Enter your email or username"
                 autoFocus=""
                 value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                onChange={(e) => {setUsername(e.target.value), setError("")}}
               />
             </div>
             <div className="mb-3 form-password-toggle">
@@ -191,7 +188,7 @@ export default function Signin() {
                   placeholder="············"
                   aria-describedby="password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => {setPassword(e.target.value), setError("")}}
                 />
                 <span className="input-group-text cursor-pointer">
                   <i className="bx bx-hide" />
@@ -228,6 +225,7 @@ export default function Signin() {
         </div>
       </div>
     </Layout>
+    </>
   );
 }
 

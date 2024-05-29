@@ -5,6 +5,7 @@ import Image from "next/image";
 import Layout from "../components/layout_landing"; // Adjust path based on your project structure
 import { isLoggedIn } from "../utils/auth";
 
+
 export default function Landing() {
   return (
     <Layout>

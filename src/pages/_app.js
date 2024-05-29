@@ -13,6 +13,8 @@ import "./../styles/vendor/libs/swiper/swiper.css";
 
 import "./../styles/vendor/libs/typeahead-js/typeahead.css";
 import "./../styles/vendor/libs/apex-charts/apex-charts.css";
+import { Toaster } from "react-hot-toast";
+
 
 function App({ Component, pageProps }) {
   useEffect(() => {
@@ -36,6 +38,7 @@ function App({ Component, pageProps }) {
 
   return (
     <UserPermissionsProvider>
+      <Toaster position="top-right" reverseOrder={false} />
       <Component {...pageProps} />
     </UserPermissionsProvider>
   );

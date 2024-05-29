@@ -52,7 +52,7 @@ export default function Signup() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          username,
+          email,
           username,
           password,
           role,
@@ -63,7 +63,6 @@ export default function Signup() {
     );
 
     const data = await response.json();
-    console.log(data);
     if (response.ok) {
       setUsername("");
       setEmail("");

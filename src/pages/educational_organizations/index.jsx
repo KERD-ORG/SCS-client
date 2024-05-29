@@ -9,6 +9,7 @@ import { useRouter } from "next/router";
 import { useUserPermissions } from "../../contexts/UserPermissionsContext";
 import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
+import axios from "axios";
 
 export default function EducationalOrganizationList() {
   const [universities, setUniversities] = useState([]);
@@ -20,6 +21,8 @@ export default function EducationalOrganizationList() {
   const [errorMessage, setErrorMessage] = useState("");
   const [formErrors, setFormErrors] = useState({});
   const token = getToken(); // Retrieve the token
+  const [countries, setCountries] = useState({});
+  const [geoAdmins, setGeoAdmins] = useState({});
 
   const router = useRouter();
   const isAuthenticated = isLoggedIn();
@@ -48,6 +51,57 @@ export default function EducationalOrganizationList() {
       .split("=")[1];
   }
 
+  useEffect(() => {
+    // Fetch all country and geo admin details concurrently
+    const countryIds = [
+      ...new Set(universities.map((university) => university.country)),
+    ];
+    const geoAdminIds = [
+      ...new Set(universities.map((university) => university.geo_admin_1)),
+    ];
+
+    const fetchCountryPromises = countryIds.map((id) =>
+      axios.get(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/countries/${id}/`,
+        {
+          headers: { Authorization: `Token ${token}` },
+        }
+      )
+    );
+    const fetchGeoAdminPromises = geoAdminIds.map((id) =>
+      axios.get(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/geo_admin1/${id}/`,
+        {
+          headers: { Authorization: `Token ${token}` },
+        }
+      )
+    );
+
+    Promise.all(fetchCountryPromises)
+      .then((responses) => {
+        const countriesData = {};
+        responses.forEach((response) => {
+          countriesData[response.data.id] = response.data;
+        });
+        setCountries(countriesData);
+      })
+      .catch((error) => {
+        console.error("Error fetching country data:", error);
+      });
+
+    Promise.all(fetchGeoAdminPromises)
+      .then((responses) => {
+        const geoAdminsData = {};
+        responses.forEach((response) => {
+          geoAdminsData[response.data.id] = response.data;
+        });
+        setGeoAdmins(geoAdminsData);
+      })
+      .catch((error) => {
+        console.error("Error fetching geo admin data:", error);
+      });
+  }, [universities]);
+
   function fetchUniversities() {
     fetch(
       `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/educational_organizations/`,
@@ -74,76 +128,66 @@ export default function EducationalOrganizationList() {
     fetchUniversities();
   }, []);
 
-  function deleteUniversity(id) {
+  const deleteUniversity = async (id) => {
     const isConfirmed = confirm(
       "Are you sure you want to delete this educational organization?"
     );
 
     if (isConfirmed) {
-      const token = getToken();
-      fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/educational_organizations/${id}/`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Token ${token}`,
-          },
-          credentials: "include",
-        }
-      )
-        .then((response) => {
-          console.log(response);
-          if (response.ok) {
-            setUniversities(universities.filter((uni) => uni.id !== id));
-            setSuccessMessage("Educational organiation deleted successfully");
-          } else {
-            console.error("Failed to delete educational organization");
-            setErrorMessage("Failed to delete educational organization");
+      try {
+        const token = getToken();
+        const response = await axios.delete(
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/educational_organizations/${id}/`,
+          {
+            headers: {
+              Authorization: `Token ${token}`,
+            },
+            withCredentials: true,
           }
-        })
-        .catch((error) => {
-          console.error("Error:", error);
-          setErrorMessage(error.message);
-        });
+        );
+
+        if (response.status === 204) {
+          // 204 No Content indicates successful deletion
+          setUniversities((prevUniversities) =>
+            prevUniversities.filter((uni) => uni.id !== id)
+          );
+          setSuccessMessage("Educational organization deleted successfully");
+        } else {
+          console.error("Failed to delete educational organization");
+          setErrorMessage("Failed to delete educational organization");
+        }
+      } catch (error) {
+        console.error("Error:", error);
+        setErrorMessage(error.message);
+      }
     } else {
       console.log("Deletion cancelled.");
     }
-  }
+  };
 
-  const handleFormSubmit = (data) => {
+  const handleFormSubmit = async (data) => {
     const url =
       formMode === "create"
         ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/educational_organizations/`
         : `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/educational_organizations/${selectedUniversity.id}/`;
     const method = formMode === "create" ? "POST" : "PUT";
 
-    fetch(url, {
-      method,
-      headers: {
-        // 'Content-Type': 'application/json',
-        Authorization: `Token ${getToken()}`,
-      },
-      body: data,
-    })
-      .then(async (response) => {
-        console.log(response)
-        if (!response.ok) {
-          if (response.status === 400) {
-            const errorData = await response.json();
-            console.log(errorData);
-            setFormErrors(errorData);
-            throw new Error("Validation failed");
-          }
-          
-          throw new Error("An error occurred. Please try again.");
-        }
-        return response.json();
-      })
-      .then((data) => {
+    try {
+      const response = await axios({
+        url,
+        method,
+        headers: {
+          Authorization: `Token ${getToken()}`,
+          "Content-Type": "application/json", // If data is JSON, otherwise adjust as needed
+        },
+        data,
+      });
+
+      if (response.status === 200 || response.status === 201) {
         setSuccessMessage(
           formMode === "create"
-            ? "Educational Organizations created successfully"
-            : "Educational Organizations updated successfully"
+            ? "Educational organization created successfully"
+            : "Educational organization updated successfully"
         );
         fetchUniversities();
         const offcanvasElement = document.getElementById("add-new-record");
@@ -153,11 +197,16 @@ export default function EducationalOrganizationList() {
           offcanvasInstance.hide();
         }
         setFormErrors({});
-      })
-      .catch((error) => {
-        console.error("Error:", error);
-        setErrorMessage(error.message);
-      });
+      } else if (response.status === 400) {
+        setFormErrors(response.data);
+        throw new Error("Validation failed");
+      } else {
+        throw new Error("An error occurred. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      setErrorMessage(error.message);
+    }
   };
 
   const openCreateForm = () => {
@@ -309,6 +358,7 @@ export default function EducationalOrganizationList() {
                   <th scope="col">{t("Web Address")}</th>
                   <th scope="col">{t("Country")}</th>
                   <th scope="col">{t("State")}</th>
+                  <th scope="col">{t("Category")}</th>
                   <th scope="col">{t("Status")}</th>
                   <th scope="col">{t("Actions")}</th>
                 </tr>
@@ -318,13 +368,29 @@ export default function EducationalOrganizationList() {
                   <tr key={university.id}>
                     <td>{university.name}</td>
                     <td>{university.web_address}</td>
-                    <td>{university.country}</td>
-                    <td>{university.geo_admin_1}</td>
-                    <td>{university.status ? 'Active' : 'Inactive'}</td>
+                    <td>
+                      {countries[university.country]?.country_name ||
+                        "Loading..."}
+                    </td>
+                    <td>
+                      {geoAdmins[university.geo_admin_1]?.geo_admin_1_name ||
+                        "Loading..."}
+                    </td>
+                    <td>{university.under_category}</td>
+                    <td>
+                      <span
+                        className={`badge badge-pill ${
+                          university.status ? "bg-success" : "bg-danger"
+                        }`}
+                        style={{ borderRadius: "15px", fontSize: "12px" }}
+                      >
+                        {university.status ? "Active" : "Inactive"}
+                      </span>
+                    </td>
                     <td>
                       {canEdit && (
                         <button
-                          className="btn btn-warning btn-sm  me-2"
+                          className="btn btn-warning btn-sm me-2"
                           type="button"
                           data-bs-toggle="offcanvas"
                           data-bs-target="#add-new-record"
@@ -337,7 +403,7 @@ export default function EducationalOrganizationList() {
 
                       {canDetails && (
                         <button
-                          className="btn btn-success btn-sm  me-2"
+                          className="btn btn-success btn-sm me-2"
                           type="button"
                           data-bs-toggle="offcanvas"
                           data-bs-target="#show-details"

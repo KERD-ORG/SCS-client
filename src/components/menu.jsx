@@ -126,9 +126,14 @@ function Menu() {
         </li>
         {canViewUniversities && (
           <li
-            className={`menu-item ${isActive("/educational-organizations") ? "active" : ""}`}
+            className={`menu-item ${
+              isActive("/educational_organizations") ? "active" : ""
+            }`}
           >
-            <Link href={localizedPath("/educational-organizations")} className="menu-link">
+            <Link
+              href={localizedPath("/educational_organizations")}
+              className="menu-link"
+            >
               <i className="menu-icon tf-icons bx bxs-school" />
               <div>{t("Educational Organizations")}</div>
             </Link>

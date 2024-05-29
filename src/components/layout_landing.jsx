@@ -5,7 +5,6 @@ import { useState, useEffect } from "react";
 import { isLoggedIn, logout, getToken } from "../utils/auth";
 import { useRouter } from "next/router";
 
-
 import "./../styles/vendor/css/pages/front-page.module.css";
 import "./../styles/vendor/css/pages/front-page-landing.module.css";
 

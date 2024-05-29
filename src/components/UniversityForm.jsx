@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import ComboBox from "./ComboBox";
-
-const top100Films = ["a", "b", "c", "d"];
+import { getToken } from "@/utils/auth";
+import axios from "axios";
 
 export default function UniversityForm({
   mode,
@@ -10,9 +10,17 @@ export default function UniversityForm({
   errors,
 }) {
   const [name, setName] = useState("");
-  const [geo_admin_1, setGeoAdmin] = useState("");
+  const [geo_admin_1, setGeoAdmin] = useState({
+    code: "",
+    name: "",
+    id: "",
+  });
   const [under_category, setUnderCategory] = useState("");
-  const [country, setCountry] = useState("");
+  const [country, setCountry] = useState({
+    code: "",
+    name: "",
+    id: "",
+  });
   const [status, setStatus] = useState("");
   const [web_address, setWebAdress] = useState("");
   const [statement, setStatement] = useState("");
@@ -20,38 +28,94 @@ export default function UniversityForm({
   const [countries, setCountries] = useState([]);
   const [states, setStates] = useState();
   const [loading, setLoading] = useState(false);
+  const token = getToken();
 
   useEffect(() => {
     (async function () {
       const res = await fetch(
-        "https://countriesnow.space/api/v0.1/countries/iso"
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/countries/`,
+        {
+          headers: {
+            Authorization: `Token ${token}`,
+          },
+        }
       );
-      const { data } = await res.json();
-      setCountries(data.map((val) => val.name));
+      const data = await res.json();
+
+      setCountries(
+        data.map(({ country_code, country_name, id }) => ({
+          code: country_code,
+          name: country_name,
+          id,
+        }))
+      );
     })();
   }, []);
 
   useEffect(() => {
-    if (mode === "edit" && initialData) {
-      setName(initialData.name);
-      setStatement(initialData.statement);
-      setWebAdress(initialData.web_address);
-      setCountry(initialData.country);
-      setGeoAdmin(initialData.geo_admin_1);
-      setStatus(initialData.status ? "active" : "inactive");
-      setUnderCategory(initialData.under_category);
-      onCountrySelect(initialData.country);
-    } else {
-      resetForm();
-    }
+    const fetchData = async () => {
+      try {
+        if (mode === "edit" && initialData) {
+          setName(initialData.name);
+          setStatement(initialData.statement);
+          setWebAdress(initialData.web_address);
+
+          setStatus(initialData.status ? "active" : "inactive");
+          setUnderCategory(initialData.under_category);
+
+          const [countryResponse, geoAdminResponse] = await Promise.all([
+            axios.get(
+              `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/countries/${initialData.country}/`,
+              { headers: { Authorization: `Token ${token}` } }
+            ),
+            axios.get(
+              `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/geo_admin1/${initialData.geo_admin_1}/`,
+              { headers: { Authorization: `Token ${token}` } }
+            ),
+          ]);
+          setCountry({
+            id: countryResponse.data.id,
+            name: countryResponse.data.country_name,
+            code: countryResponse.data.country_code,
+          });
+
+          setGeoAdmin({
+            id: geoAdminResponse.data.id,
+            name: geoAdminResponse.data.geo_admin_1_name,
+            code: geoAdminResponse.data.geo_admin_1_code,
+          });
+
+          // Assuming onCountrySelect is used to set additional details or state based on country selection
+          onCountrySelect({
+            id: countryResponse.data.id,
+            name: countryResponse.data.country_name,
+            code: countryResponse.data.country_code,
+          });
+        } else {
+          resetForm();
+        }
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
+    };
+
+    fetchData();
   }, [mode, initialData]);
 
   const resetForm = () => {
     setName("");
     setStatement("");
-    setGeoAdmin("");
+    setGeoAdmin({
+      code: "",
+      name: "",
+      id: "",
+    });
     setUnderCategory("");
-    setCountry("");
+    setCountry({
+      id: "",
+      code: "",
+      name: "",
+    });
     setWebAdress("");
     setStatus("");
     setFile(null);
@@ -61,8 +125,8 @@ export default function UniversityForm({
     event.preventDefault();
     if (
       !name ||
-      !country ||
-      !geo_admin_1 ||
+      !country.id ||
+      !geo_admin_1.id ||
       !under_category ||
       !status ||
       !statement
@@ -72,14 +136,12 @@ export default function UniversityForm({
     }
     const formData = new FormData();
     formData.append("name", name);
-    formData.append("country", country);
-    formData.append("geo_admin_1", geo_admin_1);
+    formData.append("country", country.id);
+    formData.append("geo_admin_1", geo_admin_1.id);
     formData.append("under_category", under_category);
     formData.append("web_address", web_address);
     formData.append("status", status === "active");
     formData.append("statement", statement);
-    // formData.append("created_at", new Date().toISOString().split('T')[0]);
-    // formData.append("updated_at", new Date().toISOString().split('T')[0]);
 
     if (file) {
       formData.append("document", file); //
@@ -101,24 +163,34 @@ export default function UniversityForm({
   const onCountrySelect = async (_country) => {
     setCountry(_country);
     setLoading(true);
+
     try {
-      const res = await fetch(
-        "https://countriesnow.space/api/v0.1/countries/states",
+      const response = await axios.get(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/geo_admin1/`,
         {
-          method: "POST",
+          params: {
+            country_id: _country.id,
+          },
           headers: {
+            Authorization: `Token ${token}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ country: _country }),
         }
       );
-      const data = await res.json();
-      if (data.error) throw new Error(data.msg);
-      setStates(data.data.states.map((val) => val.name));
+
+      const data = response.data;
+      setStates(
+        data.map(({ geo_admin_1_code, geo_admin_1_name, id }) => ({
+          code: geo_admin_1_code,
+          name: geo_admin_1_name,
+          id,
+        }))
+      );
     } catch (error) {
-      console.log(error.message);
+      console.error("Error fetching geo admin data:", error.message);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
@@ -181,9 +253,13 @@ export default function UniversityForm({
         <div className="input-group input-group-merge has-validation">
           <ComboBox
             data={countries}
-            value={country}
-            setValue={onCountrySelect}
+            defaultValue={country}
+            onValueChange={(e) => {
+              onCountrySelect(e);
+            }}
+            type={"Country"}
           />
+
           {errors?.country && (
             <div className="invalid-feedback d-block">{errors.country}</div>
           )}
@@ -199,8 +275,10 @@ export default function UniversityForm({
           <div className="input-group input-group-merge has-validation">
             <ComboBox
               data={states}
-              value={geo_admin_1}
-              setValue={setGeoAdmin}
+              defaultValue={geo_admin_1}
+              onValueChange={setGeoAdmin}
+              type={"State"}
+              country={country ? country.id : ""}
             />
             {errors?.geo_admin_1 && (
               <div className="invalid-feedback d-block">

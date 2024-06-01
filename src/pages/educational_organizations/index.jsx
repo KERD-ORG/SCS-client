@@ -23,6 +23,7 @@ export default function EducationalOrganizationList() {
   const token = getToken(); // Retrieve the token
   const [countries, setCountries] = useState({});
   const [geoAdmins, setGeoAdmins] = useState({});
+  const [categories, setCategories] = useState({});
 
   const router = useRouter();
   const isAuthenticated = isLoggedIn();
@@ -59,6 +60,9 @@ export default function EducationalOrganizationList() {
     const geoAdminIds = [
       ...new Set(universities.map((university) => university.geo_admin_1)),
     ];
+    const categoriesIds = [
+      ...new Set(universities.map((university) => university.under_category)),
+    ];
 
     const fetchCountryPromises = countryIds.map((id) =>
       axios.get(
@@ -71,6 +75,14 @@ export default function EducationalOrganizationList() {
     const fetchGeoAdminPromises = geoAdminIds.map((id) =>
       axios.get(
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/geo_admin1/${id}/`,
+        {
+          headers: { Authorization: `Token ${token}` },
+        }
+      )
+    );
+    const fetchCategoriesPromises = categoriesIds.map((id) =>
+      axios.get(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/under_category/${id}/`,
         {
           headers: { Authorization: `Token ${token}` },
         }
@@ -96,6 +108,18 @@ export default function EducationalOrganizationList() {
           geoAdminsData[response.data.id] = response.data;
         });
         setGeoAdmins(geoAdminsData);
+      })
+      .catch((error) => {
+        console.error("Error fetching geo admin data:", error);
+      });
+
+    Promise.all(fetchCategoriesPromises)
+      .then((responses) => {
+        const categoryData = {};
+        responses.forEach((response) => {
+          categoryData[response.data.id] = response.data;
+        });
+        setCategories(categoryData);
       })
       .catch((error) => {
         console.error("Error fetching geo admin data:", error);
@@ -376,7 +400,10 @@ export default function EducationalOrganizationList() {
                       {geoAdmins[university.geo_admin_1]?.geo_admin_1_name ||
                         "Loading..."}
                     </td>
-                    <td>{university.under_category}</td>
+                    <td>
+                      {categories[university.under_category]?.name ||
+                        "Loading..."}
+                    </td>
                     <td>
                       <span
                         className={`badge badge-pill ${

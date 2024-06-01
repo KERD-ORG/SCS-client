@@ -15,7 +15,12 @@ export default function UniversityForm({
     name: "",
     id: "",
   });
-  const [under_category, setUnderCategory] = useState("");
+  const [categories, setCategories] = useState([]);
+  const [under_category, setUnderCategory] = useState({
+    code: "",
+    name: "",
+    id: "",
+  });
   const [country, setCountry] = useState({
     code: "",
     name: "",
@@ -32,7 +37,7 @@ export default function UniversityForm({
 
   useEffect(() => {
     (async function () {
-      const res = await fetch(
+      let res = await fetch(
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/countries/`,
         {
           headers: {
@@ -40,14 +45,38 @@ export default function UniversityForm({
           },
         }
       );
-      const data = await res.json();
+      let data = await res.json();
 
       setCountries(
-        data.map(({ country_code, country_name, id }) => ({
-          code: country_code,
-          name: country_name,
-          id,
-        }))
+        data
+          ? data.map(({ country_code, country_name, id }) => ({
+              code: country_code,
+              name: country_name,
+              id,
+            }))
+          : []
+      );
+
+      res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/under_category/`,
+        {
+          headers: {
+            Authorization: `Token ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      data = await res.json();
+
+      setCategories(
+        data
+          ? data.map(({ description, id, name }) => ({
+              name,
+              code: description,
+              id,
+            }))
+          : []
       );
     })();
   }, []);
@@ -61,18 +90,22 @@ export default function UniversityForm({
           setWebAdress(initialData.web_address);
 
           setStatus(initialData.status ? "active" : "inactive");
-          setUnderCategory(initialData.under_category);
 
-          const [countryResponse, geoAdminResponse] = await Promise.all([
-            axios.get(
-              `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/countries/${initialData.country}/`,
-              { headers: { Authorization: `Token ${token}` } }
-            ),
-            axios.get(
-              `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/geo_admin1/${initialData.geo_admin_1}/`,
-              { headers: { Authorization: `Token ${token}` } }
-            ),
-          ]);
+          const [countryResponse, geoAdminResponse, categoryResponse] =
+            await Promise.all([
+              axios.get(
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/countries/${initialData.country}/`,
+                { headers: { Authorization: `Token ${token}` } }
+              ),
+              axios.get(
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/geo_admin1/${initialData.geo_admin_1}/`,
+                { headers: { Authorization: `Token ${token}` } }
+              ),
+              axios.get(
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/under_category/${initialData.under_category}/`,
+                { headers: { Authorization: `Token ${token}` } }
+              ),
+            ]);
           setCountry({
             id: countryResponse.data.id,
             name: countryResponse.data.country_name,
@@ -83,6 +116,12 @@ export default function UniversityForm({
             id: geoAdminResponse.data.id,
             name: geoAdminResponse.data.geo_admin_1_name,
             code: geoAdminResponse.data.geo_admin_1_code,
+          });
+
+          setUnderCategory({
+            id: categoryResponse.data.id,
+            name: categoryResponse.data.name,
+            code: categoryResponse.data.description,
           });
 
           // Assuming onCountrySelect is used to set additional details or state based on country selection
@@ -138,7 +177,7 @@ export default function UniversityForm({
     formData.append("name", name);
     formData.append("country", country.id);
     formData.append("geo_admin_1", geo_admin_1.id);
-    formData.append("under_category", under_category);
+    formData.append("under_category", under_category.id);
     formData.append("web_address", web_address);
     formData.append("status", status === "active");
     formData.append("statement", statement);
@@ -226,17 +265,12 @@ export default function UniversityForm({
           Category
         </label>
         <div className="input-group input-group-merge has-validation">
-          <select
-            id="under_category"
-            className="form-control"
-            value={under_category}
-            onChange={(e) => setUnderCategory(e.target.value)}
-            required
-          >
-            {/* TODO: fetch from backend */}
-            <option value="">Select category</option>
-            <option value="university">University</option>
-          </select>
+          <ComboBox
+            data={categories}
+            defaultValue={under_category}
+            onValueChange={setUnderCategory}
+            type={"Category"}
+          />
           {errors?.under_category && (
             <div className="invalid-feedback d-block">
               {errors.under_category}

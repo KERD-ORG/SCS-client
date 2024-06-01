@@ -36,7 +36,9 @@ export default function ComboBox({
     const url =
       type === "Country"
         ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/countries/`
-        : `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/geo_admin1/`;
+        : type === "State"
+        ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/geo_admin1/`
+        : `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/under_category/`;
 
     const data =
       type === "Country"
@@ -44,10 +46,15 @@ export default function ComboBox({
             country_name: dialogValue.name,
             country_code: dialogValue.code,
           }
-        : {
+        : type === "State"
+        ? {
             geo_admin_1_code: dialogValue.code,
             geo_admin_1_name: dialogValue.name,
             country,
+          }
+        : {
+            name: dialogValue.name,
+            description: dialogValue.code,
           };
 
     try {
@@ -151,7 +158,7 @@ export default function ComboBox({
                   code: event.target.value,
                 })
               }
-              label={`${type} code`}
+              label={type === "Category" ? "Description" : `${type} code`}
               type="text"
               variant="standard"
             />

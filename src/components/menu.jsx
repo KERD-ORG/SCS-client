@@ -12,6 +12,13 @@ function Menu() {
     Array.isArray(permissions) &&
     permissions.some((permission) => permission.codename === "view_university");
 
+  // Check if the user has the "view_campus" permission
+  // TODO: Handle when backend is complete
+  // const canViewCampuses =
+  //   Array.isArray(permissions) &&
+  //   permissions.some((permission) => permission.codename === "view_campus");
+  const canViewCampuses = true;
+
   const isActive = (pathname) => router.pathname === pathname;
 
   const { locale } = router;
@@ -136,6 +143,14 @@ function Menu() {
             >
               <i className="menu-icon tf-icons bx bxs-school" />
               <div>{t("Educational Organizations")}</div>
+            </Link>
+          </li>
+        )}
+        {canViewCampuses && (
+          <li className={`menu-item ${isActive("/campus") ? "active" : ""}`}>
+            <Link href={localizedPath("/campus")} className="menu-link">
+              <i class="menu-icon tf-icons bx bx-building"></i>
+              <div>{t("Campus")}</div>
             </Link>
           </li>
         )}

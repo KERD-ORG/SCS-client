@@ -4,7 +4,6 @@ import Head from "next/head";
 import Layout from "../../components/layout";
 import { useState, useEffect } from "react";
 import { isLoggedIn, logout, getToken } from "../../utils/auth";
-import UniversityForm from "../../components/UniversityForm";
 import { useRouter } from "next/router";
 import { useUserPermissions } from "../../contexts/UserPermissionsContext";
 import { useTranslation } from "next-i18next";
@@ -34,23 +33,18 @@ export default function CampusList() {
 
   const permissions = useUserPermissions();
 
-  // TODO: Handle When Backend is completed
-  //   const canAdd = permissions.some(
-  //     (permission) => permission.codename === "add_campus"
-  //   );
-  //   const canEdit = permissions.some(
-  //     (permission) => permission.codename === "change_campus"
-  //   );
-  //   const canDetails = permissions.some(
-  //     (permission) => permission.codename === "view_campus"
-  //   );
-  //   const canDelete = permissions.some(
-  //     (permission) => permission.codename === "delete_campus"
-  //   );
-  const canAdd = true,
-    canEdit = true,
-    canDetails = true,
-    canDelete = true;
+  const canAdd = permissions.some(
+    (permission) => permission.codename === "add_campus"
+  );
+  const canEdit = permissions.some(
+    (permission) => permission.codename === "change_campus"
+  );
+  const canDetails = permissions.some(
+    (permission) => permission.codename === "view_campus"
+  );
+  const canDelete = permissions.some(
+    (permission) => permission.codename === "delete_campus"
+  );
 
   function getCsrfToken() {
     return document.cookie
@@ -59,184 +53,200 @@ export default function CampusList() {
       .split("=")[1];
   }
 
-  //   useEffect(() => {
-  //     // Fetch all country and geo admin details concurrently
-  //     const countryIds = [...new Set(campuses.map((campus) => campus.country))];
-  //     const geoAdminIds1 = [
-  //       ...new Set(campuses.map((campus) => campus.geo_admin_1)),
-  //     ];
-  //     const categoriesIds = [
-  //       ...new Set(campuses.map((campus) => campus.under_category)),
-  //     ];
+  useEffect(() => {
+    // Fetch all country and geo admin details concurrently
+    const countryIds = [...new Set(campuses.map((campus) => campus.country))];
+    const geoAdminIds1 = [
+      ...new Set(campuses.map((campus) => campus.geo_admin_1)),
+    ];
+    const geoAdminIds2 = [
+      ...new Set(campuses.map((campus) => campus.geo_admin_2)),
+    ];
+    const eduOrgIds = [
+      ...new Set(campuses.map((campus) => campus.educational_organization)),
+    ];
 
-  //     const fetchCountryPromises = countryIds.map((id) =>
-  //       axios.get(
-  //         `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/countries/${id}/`,
-  //         {
-  //           headers: { Authorization: `Token ${token}` },
-  //         }
-  //       )
-  //     );
-  //     const fetchGeoAdminPromises = geoAdminIds.map((id) =>
-  //       axios.get(
-  //         `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/geo_admin1/${id}/`,
-  //         {
-  //           headers: { Authorization: `Token ${token}` },
-  //         }
-  //       )
-  //     );
-  //     const fetchCategoriesPromises = categoriesIds.map((id) =>
-  //       axios.get(
-  //         `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/under_category/${id}/`,
-  //         {
-  //           headers: { Authorization: `Token ${token}` },
-  //         }
-  //       )
-  //     );
+    const fetchCountryPromises = countryIds.map((id) =>
+      axios.get(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/countries/${id}/`,
+        {
+          headers: { Authorization: `Token ${token}` },
+        }
+      )
+    );
+    const fetchGeoAdminPromises = geoAdminIds1.map((id) =>
+      axios.get(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/geo_admin1/${id}/`,
+        {
+          headers: { Authorization: `Token ${token}` },
+        }
+      )
+    );
+    const fetchGeoAdmin2Promises = geoAdminIds2.map((id) =>
+      axios.get(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/geo_admin2/${id}/`,
+        {
+          headers: { Authorization: `Token ${token}` },
+        }
+      )
+    );
+    const fetchEduOrgPromises = eduOrgIds.map((id) =>
+      axios.get(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/educational_organizations/${id}/`,
+        {
+          headers: { Authorization: `Token ${token}` },
+        }
+      )
+    );
 
-  //     Promise.all(fetchCountryPromises)
-  //       .then((responses) => {
-  //         const countriesData = {};
-  //         responses.forEach((response) => {
-  //           countriesData[response.data.id] = response.data;
-  //         });
-  //         setCountries(countriesData);
-  //       })
-  //       .catch((error) => {
-  //         console.error("Error fetching country data:", error);
-  //       });
+    Promise.all(fetchCountryPromises)
+      .then((responses) => {
+        const countriesData = {};
+        responses.forEach((response) => {
+          countriesData[response.data.id] = response.data;
+        });
+        setCountries(countriesData);
+      })
+      .catch((error) => {
+        console.error("Error fetching country data:", error);
+      });
 
-  //     Promise.all(fetchGeoAdminPromises)
-  //       .then((responses) => {
-  //         const geoAdminsData = {};
-  //         responses.forEach((response) => {
-  //           geoAdminsData[response.data.id] = response.data;
-  //         });
-  //         setGeoAdmins(geoAdminsData);
-  //       })
-  //       .catch((error) => {
-  //         console.error("Error fetching geo admin data:", error);
-  //       });
+    Promise.all(fetchGeoAdminPromises)
+      .then((responses) => {
+        const geoAdminsData = {};
+        responses.forEach((response) => {
+          geoAdminsData[response.data.id] = response.data;
+        });
+        setGeoAdmins1(geoAdminsData);
+      })
+      .catch((error) => {
+        console.error("Error fetching geo admin 1 data:", error);
+      });
 
-  //     Promise.all(fetchCategoriesPromises)
-  //       .then((responses) => {
-  //         const categoryData = {};
-  //         responses.forEach((response) => {
-  //           categoryData[response.data.id] = response.data;
-  //         });
-  //         setCategories(categoryData);
-  //       })
-  //       .catch((error) => {
-  //         console.error("Error fetching geo admin data:", error);
-  //       });
-  //   }, [universities]);
+    Promise.all(fetchGeoAdmin2Promises)
+      .then((responses) => {
+        const geoAdminsData = {};
+        responses.forEach((response) => {
+          geoAdminsData[response.data.id] = response.data;
+        });
+        setGeoAdmins2(geoAdminsData);
+      })
+      .catch((error) => {
+        console.error("Error fetching geo admin 2 data:", error);
+      });
 
-  //   function fetchUniversities() {
-  //     fetch(
-  //       `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/educational_organizations/`,
-  //       {
-  //         headers: {
-  //           Authorization: `Token ${token}`,
-  //         },
-  //       }
-  //     )
-  //       .then((response) => {
-  //         return response.json();
-  //       })
-  //       .then((data) => setUniversities(data))
-  //       .catch((error) =>
-  //         console.error("Error fetching educational organizations:", error)
-  //       );
-  //   }
+    Promise.all(fetchEduOrgPromises)
+      .then((responses) => {
+        const categoryData = {};
+        responses.forEach((response) => {
+          categoryData[response.data.id] = response.data;
+        });
+        setEduOrgs(categoryData);
+      })
+      .catch((error) => {
+        console.error("Error fetching educational organization data:", error);
+      });
+  }, [campuses]);
+
+  function fetchCampuses() {
+    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/campus/`, {
+      headers: {
+        Authorization: `Token ${token}`,
+      },
+    })
+      .then((response) => {
+        return response.json();
+      })
+      .then((data) => setCampuses(data))
+      .catch((error) => console.error("Error fetching campus:", error));
+  }
 
   useEffect(() => {
     if (!isAuthenticated) {
       router.push("/signin");
       return;
     }
-    // fetchUniversities();
+    fetchCampuses();
   }, []);
 
-  //   const deleteUniversity = async (id) => {
-  //     const isConfirmed = confirm(
-  //       "Are you sure you want to delete this educational organization?"
-  //     );
+  const deleteCampus = async (id) => {
+    const isConfirmed = confirm("Are you sure you want to delete this campus?");
 
-  //     if (isConfirmed) {
-  //       try {
-  //         const token = getToken();
-  //         const response = await axios.delete(
-  //           `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/educational_organizations/${id}/`,
-  //           {
-  //             headers: {
-  //               Authorization: `Token ${token}`,
-  //             },
-  //             withCredentials: true,
-  //           }
-  //         );
-
-  //         if (response.status === 204) {
-  //           // 204 No Content indicates successful deletion
-  //           setUniversities((prevUniversities) =>
-  //             prevUniversities.filter((uni) => uni.id !== id)
-  //           );
-  //           setSuccessMessage("Educational organization deleted successfully");
-  //         } else {
-  //           console.error("Failed to delete educational organization");
-  //           setErrorMessage("Failed to delete educational organization");
-  //         }
-  //       } catch (error) {
-  //         console.error("Error:", error);
-  //         setErrorMessage(error.message);
-  //       }
-  //     } else {
-  //       console.log("Deletion cancelled.");
-  //     }
-  //   };
-
-    const handleFormSubmit = async (data) => {
-      const url =
-        formMode === "create"
-          ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/educational_organizations/`
-          : `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/educational_organizations/${selectedUniversity.id}/`;
-      const method = formMode === "create" ? "POST" : "PUT";
-
+    if (isConfirmed) {
       try {
-        const response = await axios({
-          url,
-          method,
-          headers: {
-            Authorization: `Token ${getToken()}`,
-            "Content-Type": "application/json", // If data is JSON, otherwise adjust as needed
-          },
-          data,
-        });
-
-        if (response.status === 200 || response.status === 201) {
-          setSuccessMessage(
-            formMode === "create"
-              ? "Educational organization created successfully"
-              : "Educational organization updated successfully"
-          );
-          fetchUniversities();
-          const offcanvasElement = document.getElementById("add-new-record");
-          const offcanvasInstance =
-            bootstrap.Offcanvas.getInstance(offcanvasElement);
-          if (offcanvasInstance) {
-            offcanvasInstance.hide();
+        const token = getToken();
+        const response = await axios.delete(
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/campus/${id}/`,
+          {
+            headers: {
+              Authorization: `Token ${token}`,
+            },
+            withCredentials: true,
           }
-          setFormErrors({});
-        } else if (response.status === 400) {
-          setFormErrors(response.data);
-          throw new Error("Validation failed");
+        );
+
+        if (response.status === 204) {
+          // 204 No Content indicates successful deletion
+          setCampuses((prevCampuses) =>
+            prevCampuses.filter((uni) => uni.id !== id)
+          );
+          setSuccessMessage("Campus deleted successfully");
         } else {
-          throw new Error("An error occurred. Please try again.");
+          console.error("Failed to delete Campus");
+          setErrorMessage("Failed to delete Campus");
         }
       } catch (error) {
         console.error("Error:", error);
         setErrorMessage(error.message);
       }
-    };
+    } else {
+      console.log("Deletion cancelled.");
+    }
+  };
+
+  const handleFormSubmit = async (data) => {
+    const url =
+      formMode === "create"
+        ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/campus/`
+        : `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/campus/${selectedCampus.id}/`;
+    const method = formMode === "create" ? "POST" : "PUT";
+
+    try {
+      const response = await axios({
+        url,
+        method,
+        headers: {
+          Authorization: `Token ${getToken()}`,
+          "Content-Type": "application/json", // If data is JSON, otherwise adjust as needed
+        },
+        data,
+      });
+
+      if (response.status === 200 || response.status === 201) {
+        setSuccessMessage(
+          formMode === "create"
+            ? "Campus created successfully"
+            : "Campus updated successfully"
+        );
+        fetchCampuses();
+        const offcanvasElement = document.getElementById("add-new-record");
+        const offcanvasInstance =
+          bootstrap.Offcanvas.getInstance(offcanvasElement);
+        if (offcanvasInstance) {
+          offcanvasInstance.hide();
+        }
+        setFormErrors({});
+      } else {
+        throw new Error("An error occurred. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      if (error.response.status === 400) {
+        setFormErrors(error.response.data);
+        setErrorMessage("Validation Failed");
+      } else setErrorMessage(error.message);
+    }
+  };
 
   const openCreateForm = () => {
     setFormMode("create");
@@ -330,7 +340,7 @@ export default function CampusList() {
                 {viewCampus.name}
               </li>
               <li className="list-group-item d-flex align-items-center">
-                {viewCampus.description}
+                {viewCampus.statement}
               </li>
             </ul>
           ) : (
@@ -381,10 +391,10 @@ export default function CampusList() {
               <thead>
                 <tr>
                   <th scope="col">{t("Name")}</th>
-                  <th scope="col">{t("Web Address")}</th>
+                  <th scope="col">{t("Educational Organization")}</th>
                   <th scope="col">{t("Country")}</th>
                   <th scope="col">{t("State")}</th>
-                  <th scope="col">{t("Category")}</th>
+                  <th scope="col">{t("City")}</th>
                   <th scope="col">{t("Status")}</th>
                   <th scope="col">{t("Actions")}</th>
                 </tr>
@@ -392,17 +402,21 @@ export default function CampusList() {
               <tbody>
                 {campuses.map((campus) => (
                   <tr key={campus.id}>
-                    <td>{campus.name}</td>
-                    <td>{campus.web_address}</td>
+                    <td>{campus.campus_name}</td>
+                    <td>
+                      {eduOrgs[campus.educational_organization]?.name ||
+                        "Loading..."}
+                    </td>
                     <td>
                       {countries[campus.country]?.country_name || "Loading..."}
                     </td>
                     <td>
-                      {geoAdmins[campus.geo_admin_1]?.geo_admin_1_name ||
+                      {geoAdmins1[campus.geo_admin_1]?.geo_admin_1_name ||
                         "Loading..."}
                     </td>
                     <td>
-                      {categories[campus.under_category]?.name || "Loading..."}
+                      {geoAdmins2[campus.geo_admin_2]?.geo_admin_2_name ||
+                        "Loading..."}
                     </td>
                     <td>
                       <span

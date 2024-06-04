@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import ComboBox from "./ComboBox";
+import ComboBoxFreeSolo from "./ComboBoxFreeSolo";
 import { getToken } from "@/utils/auth";
 import axios from "axios";
 
@@ -166,7 +166,7 @@ export default function UniversityForm({
       !name ||
       !country.id ||
       !geo_admin_1.id ||
-      !under_category ||
+      !under_category.id ||
       !status ||
       !statement
     ) {
@@ -265,7 +265,7 @@ export default function UniversityForm({
           Category
         </label>
         <div className="input-group input-group-merge has-validation">
-          <ComboBox
+          <ComboBoxFreeSolo
             data={categories}
             defaultValue={under_category}
             onValueChange={setUnderCategory}
@@ -285,7 +285,7 @@ export default function UniversityForm({
           Country
         </label>
         <div className="input-group input-group-merge has-validation">
-          <ComboBox
+          <ComboBoxFreeSolo
             data={countries}
             defaultValue={country}
             onValueChange={(e) => {
@@ -307,12 +307,12 @@ export default function UniversityForm({
             State
           </label>
           <div className="input-group input-group-merge has-validation">
-            <ComboBox
+            <ComboBoxFreeSolo
               data={states}
               defaultValue={geo_admin_1}
               onValueChange={setGeoAdmin}
               type={"State"}
-              country={country ? country.id : ""}
+              primary_key={country ? country.id : ""}
             />
             {errors?.geo_admin_1 && (
               <div className="invalid-feedback d-block">

@@ -33,16 +33,16 @@ export default function EducationalOrganizationList() {
   const permissions = useUserPermissions();
 
   const canAdd = permissions.some(
-    (permission) => permission.codename === "add_university"
+    (permission) => permission.codename === "add_educationalorganizations"
   );
   const canEdit = permissions.some(
-    (permission) => permission.codename === "change_university"
+    (permission) => permission.codename === "change_educationalorganizations"
   );
   const canDetails = permissions.some(
-    (permission) => permission.codename === "view_university"
+    (permission) => permission.codename === "view_educationalorganizations"
   );
   const canDelete = permissions.some(
-    (permission) => permission.codename === "delete_university"
+    (permission) => permission.codename === "delete_educationalorganizations"
   );
 
   function getCsrfToken() {
@@ -221,15 +221,15 @@ export default function EducationalOrganizationList() {
           offcanvasInstance.hide();
         }
         setFormErrors({});
-      } else if (response.status === 400) {
-        setFormErrors(response.data);
-        throw new Error("Validation failed");
       } else {
         throw new Error("An error occurred. Please try again.");
       }
     } catch (error) {
       console.error("Error:", error);
-      setErrorMessage(error.message);
+      if (error.response.status === 400) {
+        setFormErrors(error.response.data);
+        setErrorMessage("Validation Failed");
+      } else setErrorMessage(error.message);
     }
   };
 

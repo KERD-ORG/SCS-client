@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
-import ComboBox from "./ComboBox";
+import ComboBoxFreeSolo from "./ComboBoxFreeSolo";
 import { getToken } from "@/utils/auth";
 import axios from "axios";
+import ComboBox from "./ComboBox";
+import { ListItemText } from "@mui/material";
 
 export default function CampusForm({ mode, onSubmit, initialData, errors }) {
   const [name, setName] = useState("");
@@ -10,10 +12,8 @@ export default function CampusForm({ mode, onSubmit, initialData, errors }) {
     name: "",
     id: "",
   });
-  const [categories, setCategories] = useState([]);
-  const [under_category, setUnderCategory] = useState({
-    code: "",
-    name: "",
+  const [educational_organization, setEduOrg] = useState({
+    label: "",
     id: "",
   });
   const [country, setCountry] = useState({
@@ -21,58 +21,69 @@ export default function CampusForm({ mode, onSubmit, initialData, errors }) {
     name: "",
     id: "",
   });
+  const [geo_admin_2, setGeoAdmin2] = useState({
+    name: "",
+    id: "",
+    country: "",
+    geo_admin_1: "",
+  });
   const [status, setStatus] = useState("");
   const [web_address, setWebAdress] = useState("");
   const [statement, setStatement] = useState("");
   const [file, setFile] = useState(null);
   const [countries, setCountries] = useState([]);
+  const [edu_org_list, setEduOrgList] = useState([]);
   const [states, setStates] = useState();
+  const [cities, setCities] = useState();
   const [loading, setLoading] = useState(false);
   const token = getToken();
 
   useEffect(() => {
     (async function () {
-      let res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/countries/`,
-        {
-          headers: {
-            Authorization: `Token ${token}`,
-          },
-        }
-      );
-      let data = await res.json();
+      try {
+        let res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/countries/`,
+          {
+            headers: {
+              Authorization: `Token ${token}`,
+            },
+          }
+        );
+        let data = await res.json();
 
-      setCountries(
-        data
-          ? data.map(({ country_code, country_name, id }) => ({
-              code: country_code,
-              name: country_name,
-              id,
-            }))
-          : []
-      );
+        setCountries(
+          data
+            ? data.map(({ country_code, country_name, id }) => ({
+                code: country_code,
+                name: country_name,
+                id,
+              }))
+            : []
+        );
 
-      res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/under_category/`,
-        {
-          headers: {
-            Authorization: `Token ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+        res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/educational_organizations/`,
+          {
+            headers: {
+              Authorization: `Token ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
 
-      data = await res.json();
+        data = await res.json();
 
-      setCategories(
-        data
-          ? data.map(({ description, id, name }) => ({
-              name,
-              code: description,
-              id,
-            }))
-          : []
-      );
+        setEduOrgList(
+          data
+            ? data.map(({ id, name }) => ({
+                label: name,
+                id,
+              }))
+            : []
+        );
+      } catch (error) {
+        console.log(error);
+      }
     })();
   }, []);
 
@@ -80,27 +91,34 @@ export default function CampusForm({ mode, onSubmit, initialData, errors }) {
     const fetchData = async () => {
       try {
         if (mode === "edit" && initialData) {
-          setName(initialData.name);
+          setName(initialData.campus_name);
           setStatement(initialData.statement);
-          setWebAdress(initialData.web_address);
 
-          setStatus(initialData.status ? "active" : "inactive");
+          setStatus(initialData.status === "Active" ? "active" : "inactive");
 
-          const [countryResponse, geoAdminResponse, categoryResponse] =
-            await Promise.all([
-              axios.get(
-                `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/countries/${initialData.country}/`,
-                { headers: { Authorization: `Token ${token}` } }
-              ),
-              axios.get(
-                `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/geo_admin1/${initialData.geo_admin_1}/`,
-                { headers: { Authorization: `Token ${token}` } }
-              ),
-              axios.get(
-                `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/under_category/${initialData.under_category}/`,
-                { headers: { Authorization: `Token ${token}` } }
-              ),
-            ]);
+          const [
+            countryResponse,
+            geoAdminResponse,
+            eduOrgResponse,
+            geoAdmin2Response,
+          ] = await Promise.all([
+            axios.get(
+              `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/countries/${initialData.country}/`,
+              { headers: { Authorization: `Token ${token}` } }
+            ),
+            axios.get(
+              `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/geo_admin1/${initialData.geo_admin_1}/`,
+              { headers: { Authorization: `Token ${token}` } }
+            ),
+            axios.get(
+              `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/educational_organizations/${initialData.educational_organization}/`,
+              { headers: { Authorization: `Token ${token}` } }
+            ),
+            axios.get(
+              `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/geo_admin2/${initialData.geo_admin_2}/`,
+              { headers: { Authorization: `Token ${token}` } }
+            ),
+          ]);
           setCountry({
             id: countryResponse.data.id,
             name: countryResponse.data.country_name,
@@ -113,10 +131,16 @@ export default function CampusForm({ mode, onSubmit, initialData, errors }) {
             code: geoAdminResponse.data.geo_admin_1_code,
           });
 
-          setUnderCategory({
-            id: categoryResponse.data.id,
-            name: categoryResponse.data.name,
-            code: categoryResponse.data.description,
+          setEduOrg({
+            id: eduOrgResponse.data.id,
+            label: eduOrgResponse.data.name,
+          });
+
+          setGeoAdmin2({
+            id: geoAdmin2Response.data.id,
+            country: geoAdmin2Response.data.country,
+            name: geoAdmin2Response.data.geo_admin_2_name,
+            geo_admin_1: geoAdmin2Response.data.geo_admin_1,
           });
 
           // Assuming onCountrySelect is used to set additional details or state based on country selection
@@ -144,15 +168,19 @@ export default function CampusForm({ mode, onSubmit, initialData, errors }) {
       name: "",
       id: "",
     });
-    setUnderCategory("");
+    setGeoAdmin2({
+      name: "",
+      id: "",
+      country: "",
+      geo_admin_1: "",
+    });
+    setEduOrg({ id: "", label: "" });
     setCountry({
       id: "",
       code: "",
       name: "",
     });
-    setWebAdress("");
     setStatus("");
-    setFile(null);
   };
 
   const handleSubmit = (event) => {
@@ -161,37 +189,24 @@ export default function CampusForm({ mode, onSubmit, initialData, errors }) {
       !name ||
       !country.id ||
       !geo_admin_1.id ||
-      !under_category ||
+      !educational_organization.id ||
       !status ||
-      !statement
+      !statement ||
+      !geo_admin_2.id
     ) {
       alert("Fill all the required fields");
       return;
     }
     const formData = new FormData();
-    formData.append("name", name);
+    formData.append("campus_name", name);
     formData.append("country", country.id);
     formData.append("geo_admin_1", geo_admin_1.id);
-    formData.append("under_category", under_category.id);
-    formData.append("web_address", web_address);
-    formData.append("status", status === "active");
+    formData.append("educational_organization", educational_organization.id);
+    formData.append("geo_admin_2", geo_admin_2.id);
+    formData.append("status", status === "active" ? "Active" : "Inactive");
     formData.append("statement", statement);
 
-    if (file) {
-      formData.append("document", file); //
-    }
-
     onSubmit(formData);
-  };
-
-  const handleSubmit_ = (event) => {
-    event.preventDefault();
-    onSubmit({ name, statement });
-    resetForm();
-  };
-
-  const handleFileChange = (event) => {
-    setFile(event.target.files[0]);
   };
 
   const onCountrySelect = async (_country) => {
@@ -212,13 +227,36 @@ export default function CampusForm({ mode, onSubmit, initialData, errors }) {
         }
       );
 
-      const data = response.data;
+      let data = response.data;
       setStates(
         data.map(({ geo_admin_1_code, geo_admin_1_name, id }) => ({
           code: geo_admin_1_code,
           name: geo_admin_1_name,
           id,
         }))
+      );
+
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/geo_admin2/`,
+        {
+          headers: {
+            Authorization: `Token ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      data = await res.json();
+
+      setCities(
+        data
+          ? data.map(({ id, geo_admin_2_name, country, geo_admin_1 }) => ({
+              name: geo_admin_2_name,
+              id,
+              country,
+              geo_admin_1,
+            }))
+          : []
       );
     } catch (error) {
       console.error("Error fetching geo admin data:", error.message);
@@ -248,8 +286,8 @@ export default function CampusForm({ mode, onSubmit, initialData, errors }) {
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
-          {errors?.name && (
-            <div className="invalid-feedback d-block">{errors.name}</div>
+          {errors?.campus_name && (
+            <div className="invalid-feedback d-block">{errors.campus_name}</div>
           )}
         </div>
         <div className="fv-plugins-message-container invalid-feedback" />
@@ -261,14 +299,13 @@ export default function CampusForm({ mode, onSubmit, initialData, errors }) {
         </label>
         <div className="input-group input-group-merge has-validation">
           <ComboBox
-            data={categories}
-            defaultValue={under_category}
-            onValueChange={setUnderCategory}
-            type={"Category"}
+            data={edu_org_list}
+            defaultValue={educational_organization}
+            onValueChange={setEduOrg}
           />
-          {errors?.under_category && (
+          {errors?.educational_organization && (
             <div className="invalid-feedback d-block">
-              {errors.under_category}
+              {errors.educational_organization}
             </div>
           )}
         </div>
@@ -280,13 +317,14 @@ export default function CampusForm({ mode, onSubmit, initialData, errors }) {
           Country
         </label>
         <div className="input-group input-group-merge has-validation">
-          <ComboBox
+          <ComboBoxFreeSolo
             data={countries}
             defaultValue={country}
             onValueChange={(e) => {
               onCountrySelect(e);
             }}
             type={"Country"}
+            freeSolo={true}
           />
 
           {errors?.country && (
@@ -302,12 +340,13 @@ export default function CampusForm({ mode, onSubmit, initialData, errors }) {
             State
           </label>
           <div className="input-group input-group-merge has-validation">
-            <ComboBox
+            <ComboBoxFreeSolo
               data={states}
               defaultValue={geo_admin_1}
               onValueChange={setGeoAdmin}
               type={"State"}
               country={country ? country.id : ""}
+              freeSolo={true}
             />
             {errors?.geo_admin_1 && (
               <div className="invalid-feedback d-block">
@@ -319,22 +358,23 @@ export default function CampusForm({ mode, onSubmit, initialData, errors }) {
         </div>
       )}
 
-      {states && (
+      {cities && (
         <div className="col-sm-12 fv-plugins-icon-container">
-          <label className="form-label" htmlFor="geo_admin_1">
+          <label className="form-label" htmlFor="geo_admin_2">
             City
           </label>
           <div className="input-group input-group-merge has-validation">
-            <ComboBox
-              data={states}
-              defaultValue={geo_admin_1}
-              onValueChange={setGeoAdmin}
-              type={"State"}
+            <ComboBoxFreeSolo
+              data={cities}
+              defaultValue={geo_admin_2}
+              onValueChange={setGeoAdmin2}
+              type={"City"}
               country={country ? country.id : ""}
+              geo_admin_1={geo_admin_1 ? geo_admin_1.id : ""}
             />
-            {errors?.geo_admin_1 && (
+            {errors?.geo_admin_2 && (
               <div className="invalid-feedback d-block">
-                {errors.geo_admin_1}
+                {errors.geo_admin_2}
               </div>
             )}
           </div>

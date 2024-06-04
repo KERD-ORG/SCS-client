@@ -8,16 +8,18 @@ function Menu() {
   const permissions = useUserPermissions() || [];
 
   // Check if the user has the "view_university" permission
-  const canViewUniversities =
+  const canViewEducationalOrganizations =
     Array.isArray(permissions) &&
-    permissions.some((permission) => permission.codename === "view_university");
+    permissions.some(
+      (permission) => permission.codename === "view_educationalorganizations"
+    );
 
   // Check if the user has the "view_campus" permission
-  // TODO: Handle when backend is complete
-  // const canViewCampuses =
-  //   Array.isArray(permissions) &&
-  //   permissions.some((permission) => permission.codename === "view_campus");
-  const canViewCampuses = true;
+  
+  const canViewCampuses =
+    Array.isArray(permissions) &&
+    permissions.some((permission) => permission.codename === "view_campus");
+  
 
   const isActive = (pathname) => router.pathname === pathname;
 
@@ -126,32 +128,32 @@ function Menu() {
       <div className="menu-inner-shadow" />
       <ul className="menu-inner py-1">
         <li className={`menu-item ${isActive("/dashboard") ? "active" : ""}`}>
-          <Link href={localizedPath("/dashboard")} className="menu-link">
+          <a href={localizedPath("/dashboard")} className="menu-link">
             <i className="menu-icon tf-icons bx bx-home-circle" />
             <div>{t("Dashboard")}</div>
-          </Link>
+          </a>
         </li>
-        {canViewUniversities && (
+        {canViewEducationalOrganizations && (
           <li
             className={`menu-item ${
               isActive("/educational_organizations") ? "active" : ""
             }`}
           >
-            <Link
+            <a
               href={localizedPath("/educational_organizations")}
               className="menu-link"
             >
               <i className="menu-icon tf-icons bx bxs-school" />
               <div>{t("Educational Organizations")}</div>
-            </Link>
+            </a>
           </li>
         )}
         {canViewCampuses && (
           <li className={`menu-item ${isActive("/campus") ? "active" : ""}`}>
-            <Link href={localizedPath("/campus")} className="menu-link">
+            <a href={localizedPath("/campus")} className="menu-link">
               <i class="menu-icon tf-icons bx bx-building"></i>
               <div>{t("Campus")}</div>
-            </Link>
+            </a>
           </li>
         )}
       </ul>

@@ -3,105 +3,75 @@ import ComboBoxFreeSolo from "./ComboBoxFreeSolo";
 import { getToken } from "@/utils/auth";
 import axios from "axios";
 import ComboBox from "./ComboBox";
-import { ListItemText } from "@mui/material";
 
 export default function CampusForm({ mode, onSubmit, initialData, errors }) {
-  const [name, setName] = useState("");
-  const [geo_admin_1, setGeoAdmin] = useState({
-    code: "",
-    name: "",
-    id: "",
+  const [formData, setFormData] = useState({
+    campus_name: "",
+    geo_admin_1: { code: "", name: "", id: "" },
+    educational_organization: { label: "", id: "" },
+    country: { code: "", name: "", id: "" },
+    geo_admin_2: { name: "", id: "", country: "", geo_admin_1: "" },
+    status: "",
+    web_address: "",
+    statement: "",
+    file: null,
   });
-  const [educational_organization, setEduOrg] = useState({
-    label: "",
-    id: "",
+
+  const [dropdownData, setDropdownData] = useState({
+    countries: [],
+    edu_org_list: [],
+    states: [],
+    cities: [],
   });
-  const [country, setCountry] = useState({
-    code: "",
-    name: "",
-    id: "",
-  });
-  const [geo_admin_2, setGeoAdmin2] = useState({
-    name: "",
-    id: "",
-    country: "",
-    geo_admin_1: "",
-  });
-  const [status, setStatus] = useState("");
-  const [web_address, setWebAdress] = useState("");
-  const [statement, setStatement] = useState("");
-  const [file, setFile] = useState(null);
-  const [countries, setCountries] = useState([]);
-  const [edu_org_list, setEduOrgList] = useState([]);
-  const [states, setStates] = useState();
-  const [cities, setCities] = useState();
+
   const [loading, setLoading] = useState(false);
   const token = getToken();
 
   useEffect(() => {
-    (async function () {
+    const fetchDropdownData = async () => {
       try {
-        let res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/countries/`,
-          {
-            headers: {
-              Authorization: `Token ${token}`,
-            },
-          }
-        );
-        let data = await res.json();
+        const [countriesRes, eduOrgsRes] = await Promise.all([
+          axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/countries/`, {
+            headers: { Authorization: `Token ${token}` },
+          }),
+          axios.get(
+            `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/educational_organizations/`,
+            {
+              headers: {
+                Authorization: `Token ${token}`,
+                "Content-Type": "application/json",
+              },
+            }
+          ),
+        ]);
 
-        setCountries(
-          data
-            ? data.map(({ country_code, country_name, id }) => ({
-                code: country_code,
-                name: country_name,
-                id,
-              }))
-            : []
-        );
-
-        res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/educational_organizations/`,
-          {
-            headers: {
-              Authorization: `Token ${token}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
-
-        data = await res.json();
-
-        setEduOrgList(
-          data
-            ? data.map(({ id, name }) => ({
-                label: name,
-                id,
-              }))
-            : []
-        );
+        setDropdownData((prevState) => ({
+          ...prevState,
+          countries: countriesRes.data.map(
+            ({ country_code, country_name, id }) => ({
+              code: country_code,
+              name: country_name,
+              id,
+            })
+          ),
+          edu_org_list: eduOrgsRes.data.map(({ id, name }) => ({
+            label: name,
+            id,
+          })),
+        }));
       } catch (error) {
-        console.log(error);
+        console.error("Error fetching dropdown data:", error);
       }
-    })();
-  }, []);
+    };
+
+    fetchDropdownData();
+  }, [token]);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        if (mode === "edit" && initialData) {
-          setName(initialData.campus_name);
-          setStatement(initialData.statement);
-
-          setStatus(initialData.status === "Active" ? "active" : "inactive");
-
-          const [
-            countryResponse,
-            geoAdminResponse,
-            eduOrgResponse,
-            geoAdmin2Response,
-          ] = await Promise.all([
+    if (mode === "edit" && initialData) {
+      const loadInitialData = async () => {
+        try {
+          const [country, geoAdmin1, eduOrg, geoAdmin2] = await Promise.all([
             axios.get(
               `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/countries/${initialData.country}/`,
               { headers: { Authorization: `Token ${token}` } }
@@ -119,74 +89,83 @@ export default function CampusForm({ mode, onSubmit, initialData, errors }) {
               { headers: { Authorization: `Token ${token}` } }
             ),
           ]);
-          setCountry({
-            id: countryResponse.data.id,
-            name: countryResponse.data.country_name,
-            code: countryResponse.data.country_code,
+
+          setFormData({
+            campus_name: initialData.campus_name,
+            statement: initialData.statement,
+            status: initialData.status === "Active" ? "active" : "inactive",
+            country: {
+              id: country.data.id,
+              name: country.data.country_name,
+              code: country.data.country_code,
+            },
+            geo_admin_1: {
+              id: geoAdmin1.data.id,
+              name: geoAdmin1.data.geo_admin_1_name,
+              code: geoAdmin1.data.geo_admin_1_code,
+            },
+            educational_organization: {
+              id: eduOrg.data.id,
+              label: eduOrg.data.name,
+            },
+            geo_admin_2: {
+              id: geoAdmin2.data.id,
+              country: geoAdmin2.data.country,
+              name: geoAdmin2.data.geo_admin_2_name,
+              geo_admin_1: geoAdmin2.data.geo_admin_1,
+            },
+            web_address: "",
+            file: null,
           });
 
-          setGeoAdmin({
-            id: geoAdminResponse.data.id,
-            name: geoAdminResponse.data.geo_admin_1_name,
-            code: geoAdminResponse.data.geo_admin_1_code,
-          });
-
-          setEduOrg({
-            id: eduOrgResponse.data.id,
-            label: eduOrgResponse.data.name,
-          });
-
-          setGeoAdmin2({
-            id: geoAdmin2Response.data.id,
-            country: geoAdmin2Response.data.country,
-            name: geoAdmin2Response.data.geo_admin_2_name,
-            geo_admin_1: geoAdmin2Response.data.geo_admin_1,
-          });
-
-          // Assuming onCountrySelect is used to set additional details or state based on country selection
           onCountrySelect({
-            id: countryResponse.data.id,
-            name: countryResponse.data.country_name,
-            code: countryResponse.data.country_code,
+            id: country.data.id,
+            name: country.data.country_name,
+            code: country.data.country_code,
           });
-        } else {
-          resetForm();
+        } catch (error) {
+          console.error("Error loading initial data:", error);
         }
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      }
-    };
+      };
 
-    fetchData();
-  }, [mode, initialData]);
+      loadInitialData();
+    } else {
+      resetForm();
+    }
+  }, [mode, initialData, token]);
 
   const resetForm = () => {
-    setName("");
-    setStatement("");
-    setGeoAdmin({
-      code: "",
-      name: "",
-      id: "",
+    setFormData({
+      campus_name: "",
+      geo_admin_1: { code: "", name: "", id: "" },
+      educational_organization: { label: "", id: "" },
+      country: { code: "", name: "", id: "" },
+      geo_admin_2: { name: "", id: "", country: "", geo_admin_1: "" },
+      status: "",
+      web_address: "",
+      statement: "",
+      file: null,
     });
-    setGeoAdmin2({
-      name: "",
-      id: "",
-      country: "",
-      geo_admin_1: "",
-    });
-    setEduOrg({ id: "", label: "" });
-    setCountry({
-      id: "",
-      code: "",
-      name: "",
-    });
-    setStatus("");
+  };
+
+  const handleChange = (field, value) => {
+    setFormData((prevState) => ({ ...prevState, [field]: value }));
   };
 
   const handleSubmit = (event) => {
     event.preventDefault();
+    const {
+      campus_name,
+      country,
+      geo_admin_1,
+      educational_organization,
+      status,
+      statement,
+      geo_admin_2,
+    } = formData;
+
     if (
-      !name ||
+      !campus_name ||
       !country.id ||
       !geo_admin_1.id ||
       !educational_organization.id ||
@@ -197,67 +176,64 @@ export default function CampusForm({ mode, onSubmit, initialData, errors }) {
       alert("Fill all the required fields");
       return;
     }
-    const formData = new FormData();
-    formData.append("campus_name", name);
-    formData.append("country", country.id);
-    formData.append("geo_admin_1", geo_admin_1.id);
-    formData.append("educational_organization", educational_organization.id);
-    formData.append("geo_admin_2", geo_admin_2.id);
-    formData.append("status", status === "active" ? "Active" : "Inactive");
-    formData.append("statement", statement);
 
-    onSubmit(formData);
+    const submissionData = new FormData();
+    Object.entries(formData).forEach(([key, value]) => {
+      if (value && typeof value === "object" && value.id) {
+        submissionData.append(key, value.id);
+      } else if (value !== null && value !== undefined) {
+        submissionData.append(key, value);
+      }
+    });
+
+    submissionData.set("status", status === "active" ? "Active" : "Inactive");
+
+    for(let [key, value] of submissionData.entries()) {
+      console.log(key, value)
+    }
+
+    onSubmit(submissionData);
   };
 
   const onCountrySelect = async (_country) => {
-    setCountry(_country);
+    handleChange("country", _country);
     setLoading(true);
 
     try {
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/geo_admin1/`,
-        {
-          params: {
-            country_id: _country.id,
-          },
+      const [statesRes, citiesRes] = await Promise.all([
+        axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/geo_admin1/`, {
+          params: { country_id: _country.id },
           headers: {
             Authorization: `Token ${token}`,
             "Content-Type": "application/json",
           },
-        }
-      );
-
-      let data = response.data;
-      setStates(
-        data.map(({ geo_admin_1_code, geo_admin_1_name, id }) => ({
-          code: geo_admin_1_code,
-          name: geo_admin_1_name,
-          id,
-        }))
-      );
-
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/geo_admin2/`,
-        {
+        }),
+        axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/geo_admin2/`, {
           headers: {
             Authorization: `Token ${token}`,
             "Content-Type": "application/json",
           },
-        }
-      );
+        }),
+      ]);
 
-      data = await res.json();
-
-      setCities(
-        data
-          ? data.map(({ id, geo_admin_2_name, country, geo_admin_1 }) => ({
-              name: geo_admin_2_name,
-              id,
-              country,
-              geo_admin_1,
-            }))
-          : []
-      );
+      setDropdownData((prevState) => ({
+        ...prevState,
+        states: statesRes.data.map(
+          ({ geo_admin_1_code, geo_admin_1_name, id }) => ({
+            code: geo_admin_1_code,
+            name: geo_admin_1_name,
+            id,
+          })
+        ),
+        cities: citiesRes.data.map(
+          ({ id, geo_admin_2_name, country, geo_admin_1 }) => ({
+            name: geo_admin_2_name,
+            id,
+            country,
+            geo_admin_1,
+          })
+        ),
+      }));
     } catch (error) {
       console.error("Error fetching geo admin data:", error.message);
     } finally {
@@ -278,19 +254,18 @@ export default function CampusForm({ mode, onSubmit, initialData, errors }) {
         <div className="input-group input-group-merge has-validation">
           <input
             type="text"
-            id="name"
+            id="campus_name"
             className="form-control dt-full-name"
-            name="name"
+            name="campus_name"
             placeholder="University of Idaho"
             aria-label="University of Idaho"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
+            value={formData.campus_name}
+            onChange={(e) => handleChange("campus_name", e.target.value)}
           />
           {errors?.campus_name && (
             <div className="invalid-feedback d-block">{errors.campus_name}</div>
           )}
         </div>
-        <div className="fv-plugins-message-container invalid-feedback" />
       </div>
 
       <div className="col-sm-12 fv-plugins-icon-container">
@@ -299,9 +274,11 @@ export default function CampusForm({ mode, onSubmit, initialData, errors }) {
         </label>
         <div className="input-group input-group-merge has-validation">
           <ComboBox
-            data={edu_org_list}
-            defaultValue={educational_organization}
-            onValueChange={setEduOrg}
+            data={dropdownData.edu_org_list}
+            defaultValue={formData.educational_organization}
+            onValueChange={(value) =>
+              handleChange("educational_organization", value)
+            }
           />
           {errors?.educational_organization && (
             <div className="invalid-feedback d-block">
@@ -309,7 +286,6 @@ export default function CampusForm({ mode, onSubmit, initialData, errors }) {
             </div>
           )}
         </div>
-        <div className="fv-plugins-message-container invalid-feedback" />
       </div>
 
       <div className="col-sm-12 fv-plugins-icon-container">
@@ -318,34 +294,34 @@ export default function CampusForm({ mode, onSubmit, initialData, errors }) {
         </label>
         <div className="input-group input-group-merge has-validation">
           <ComboBoxFreeSolo
-            data={countries}
-            defaultValue={country}
-            onValueChange={(e) => {
-              onCountrySelect(e);
+            data={dropdownData.countries}
+            defaultValue={{
+              id: formData.country.id,
+              name: formData.country.name,
+              code: formData.country.code,
             }}
+            onValueChange={(value) => onCountrySelect(value)}
             type={"Country"}
             freeSolo={true}
           />
-
           {errors?.country && (
             <div className="invalid-feedback d-block">{errors.country}</div>
           )}
         </div>
-        <div className="fv-plugins-message-container invalid-feedback" />
       </div>
 
-      {states && (
+      {dropdownData.states.length > 0 && (
         <div className="col-sm-12 fv-plugins-icon-container">
           <label className="form-label" htmlFor="geo_admin_1">
             State
           </label>
           <div className="input-group input-group-merge has-validation">
             <ComboBoxFreeSolo
-              data={states}
-              defaultValue={geo_admin_1}
-              onValueChange={setGeoAdmin}
+              data={dropdownData.states}
+              defaultValue={formData.geo_admin_1}
+              onValueChange={(value) => handleChange("geo_admin_1", value)}
               type={"State"}
-              country={country ? country.id : ""}
+              country={formData.country.id}
               freeSolo={true}
             />
             {errors?.geo_admin_1 && (
@@ -354,23 +330,22 @@ export default function CampusForm({ mode, onSubmit, initialData, errors }) {
               </div>
             )}
           </div>
-          <div className="fv-plugins-message-container invalid-feedback" />
         </div>
       )}
 
-      {cities && (
+      {dropdownData.cities.length > 0 && (
         <div className="col-sm-12 fv-plugins-icon-container">
           <label className="form-label" htmlFor="geo_admin_2">
             City
           </label>
           <div className="input-group input-group-merge has-validation">
             <ComboBoxFreeSolo
-              data={cities}
-              defaultValue={geo_admin_2}
-              onValueChange={setGeoAdmin2}
+              data={dropdownData.cities}
+              defaultValue={formData.geo_admin_2}
+              onValueChange={(value) => handleChange("geo_admin_2", value)}
               type={"City"}
-              country={country ? country.id : ""}
-              geo_admin_1={geo_admin_1 ? geo_admin_1.id : ""}
+              country={formData.country.id}
+              geo_admin_1={formData.geo_admin_1.id}
             />
             {errors?.geo_admin_2 && (
               <div className="invalid-feedback d-block">
@@ -378,7 +353,6 @@ export default function CampusForm({ mode, onSubmit, initialData, errors }) {
               </div>
             )}
           </div>
-          <div className="fv-plugins-message-container invalid-feedback" />
         </div>
       )}
 
@@ -390,8 +364,8 @@ export default function CampusForm({ mode, onSubmit, initialData, errors }) {
           <select
             id="status"
             className="form-control"
-            value={status}
-            onChange={(e) => setStatus(e.target.value)}
+            value={formData.status}
+            onChange={(e) => handleChange("status", e.target.value)}
             required
           >
             <option value="">Select status</option>
@@ -402,7 +376,6 @@ export default function CampusForm({ mode, onSubmit, initialData, errors }) {
             <div className="invalid-feedback d-block">{errors.status}</div>
           )}
         </div>
-        <div className="fv-plugins-message-container invalid-feedback" />
       </div>
 
       <div className="col-sm-12 fv-plugins-icon-container">
@@ -414,14 +387,13 @@ export default function CampusForm({ mode, onSubmit, initialData, errors }) {
             id="statement"
             className="form-control"
             aria-label="With textarea"
-            value={statement}
-            onChange={(e) => setStatement(e.target.value)}
+            value={formData.statement}
+            onChange={(e) => handleChange("statement", e.target.value)}
           ></textarea>
           {errors?.statement && (
             <div className="invalid-feedback d-block">{errors.statement}</div>
           )}
         </div>
-        <div className="fv-plugins-message-container invalid-feedback" />
       </div>
 
       <div className="col-sm-12">
@@ -434,7 +406,7 @@ export default function CampusForm({ mode, onSubmit, initialData, errors }) {
         <button
           type="reset"
           className="btn btn-outline-secondary btn-sm"
-          data-bs-dismiss="offcanvas"
+          onClick={resetForm}
         >
           Cancel
         </button>

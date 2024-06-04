@@ -157,7 +157,10 @@ export default function CampusList() {
       .then((response) => {
         return response.json();
       })
-      .then((data) => setCampuses(data))
+      .then((data) => {
+        console.log(data)
+        setCampuses(data)
+      })
       .catch((error) => console.error("Error fetching campus:", error));
   }
 
@@ -421,11 +424,11 @@ export default function CampusList() {
                     <td>
                       <span
                         className={`badge badge-pill ${
-                          campus.status ? "bg-success" : "bg-danger"
+                          campus.status === 'Active' ? "bg-success" : "bg-danger"
                         }`}
                         style={{ borderRadius: "15px", fontSize: "12px" }}
                       >
-                        {campus.status ? "Active" : "Inactive"}
+                        {campus.status}
                       </span>
                     </td>
                     <td>

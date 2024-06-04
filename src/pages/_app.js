@@ -15,7 +15,6 @@ import "./../styles/vendor/libs/typeahead-js/typeahead.css";
 import "./../styles/vendor/libs/apex-charts/apex-charts.css";
 import { Toaster } from "react-hot-toast";
 
-
 function App({ Component, pageProps }) {
   useEffect(() => {
     const loadAdditionalStyles = async () => {
@@ -31,6 +30,7 @@ function App({ Component, pageProps }) {
         await import("./../styles/vendor/css/rtl/core.css");
         await import("./../styles/vendor/css/rtl/theme-default.css");
       }
+      // await import("bootstrap/dist/js/bootstrap.bundle.js");
     };
 
     loadAdditionalStyles();

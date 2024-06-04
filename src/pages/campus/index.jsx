@@ -1,9 +1,7 @@
-// src/pages/about.js
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Head from "next/head";
 import Layout from "../../components/layout";
-import { useState, useEffect } from "react";
-import { isLoggedIn, logout, getToken } from "../../utils/auth";
+import { isLoggedIn, getToken } from "../../utils/auth";
 import { useRouter } from "next/router";
 import { useUserPermissions } from "../../contexts/UserPermissionsContext";
 import { useTranslation } from "next-i18next";
@@ -20,7 +18,7 @@ export default function CampusList() {
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [formErrors, setFormErrors] = useState({});
-  const token = getToken(); // Retrieve the token
+  const token = getToken();
   const [countries, setCountries] = useState({});
   const [geoAdmins1, setGeoAdmins1] = useState({});
   const [geoAdmins2, setGeoAdmins2] = useState({});
@@ -53,157 +51,120 @@ export default function CampusList() {
       .split("=")[1];
   }
 
-  useEffect(() => {
-    // Fetch all country and geo admin details concurrently
-    const countryIds = [...new Set(campuses.map((campus) => campus.country))];
-    const geoAdminIds1 = [
-      ...new Set(campuses.map((campus) => campus.geo_admin_1)),
-    ];
-    const geoAdminIds2 = [
-      ...new Set(campuses.map((campus) => campus.geo_admin_2)),
-    ];
-    const eduOrgIds = [
-      ...new Set(campuses.map((campus) => campus.educational_organization)),
-    ];
+  const fetchCampuses = async () => {
+    try {
+      const campusResponse = await axios.get(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/campus/`,
+        { headers: { Authorization: `Token ${token}` } }
+      );
+      setCampuses(campusResponse.data);
 
-    const fetchCountryPromises = countryIds.map((id) =>
-      axios.get(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/countries/${id}/`,
-        {
-          headers: { Authorization: `Token ${token}` },
-        }
-      )
-    );
-    const fetchGeoAdminPromises = geoAdminIds1.map((id) =>
-      axios.get(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/geo_admin1/${id}/`,
-        {
-          headers: { Authorization: `Token ${token}` },
-        }
-      )
-    );
-    const fetchGeoAdmin2Promises = geoAdminIds2.map((id) =>
-      axios.get(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/geo_admin2/${id}/`,
-        {
-          headers: { Authorization: `Token ${token}` },
-        }
-      )
-    );
-    const fetchEduOrgPromises = eduOrgIds.map((id) =>
-      axios.get(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/educational_organizations/${id}/`,
-        {
-          headers: { Authorization: `Token ${token}` },
-        }
-      )
-    );
+      const countryIds = [
+        ...new Set(campusResponse.data.map((campus) => campus.country)),
+      ];
+      const geoAdminIds1 = [
+        ...new Set(campusResponse.data.map((campus) => campus.geo_admin_1)),
+      ];
+      const geoAdminIds2 = [
+        ...new Set(campusResponse.data.map((campus) => campus.geo_admin_2)),
+      ];
+      const eduOrgIds = [
+        ...new Set(
+          campusResponse.data.map((campus) => campus.educational_organization)
+        ),
+      ];
 
-    Promise.all(fetchCountryPromises)
-      .then((responses) => {
-        const countriesData = {};
-        responses.forEach((response) => {
-          countriesData[response.data.id] = response.data;
-        });
-        setCountries(countriesData);
-      })
-      .catch((error) => {
-        console.error("Error fetching country data:", error);
-      });
+      const [
+        countriesResponse,
+        geoAdmin1Response,
+        geoAdmin2Response,
+        eduOrgResponse,
+      ] = await Promise.all([
+        Promise.all(
+          countryIds.map((id) =>
+            axios.get(
+              `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/countries/${id}/`,
+              { headers: { Authorization: `Token ${token}` } }
+            )
+          )
+        ),
+        Promise.all(
+          geoAdminIds1.map((id) =>
+            axios.get(
+              `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/geo_admin1/${id}/`,
+              { headers: { Authorization: `Token ${token}` } }
+            )
+          )
+        ),
+        Promise.all(
+          geoAdminIds2.map((id) =>
+            axios.get(
+              `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/geo_admin2/${id}/`,
+              { headers: { Authorization: `Token ${token}` } }
+            )
+          )
+        ),
+        Promise.all(
+          eduOrgIds.map((id) =>
+            axios.get(
+              `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/educational_organizations/${id}/`,
+              { headers: { Authorization: `Token ${token}` } }
+            )
+          )
+        ),
+      ]);
 
-    Promise.all(fetchGeoAdminPromises)
-      .then((responses) => {
-        const geoAdminsData = {};
-        responses.forEach((response) => {
-          geoAdminsData[response.data.id] = response.data;
-        });
-        setGeoAdmins1(geoAdminsData);
-      })
-      .catch((error) => {
-        console.error("Error fetching geo admin 1 data:", error);
-      });
-
-    Promise.all(fetchGeoAdmin2Promises)
-      .then((responses) => {
-        const geoAdminsData = {};
-        responses.forEach((response) => {
-          geoAdminsData[response.data.id] = response.data;
-        });
-        setGeoAdmins2(geoAdminsData);
-      })
-      .catch((error) => {
-        console.error("Error fetching geo admin 2 data:", error);
-      });
-
-    Promise.all(fetchEduOrgPromises)
-      .then((responses) => {
-        const categoryData = {};
-        responses.forEach((response) => {
-          categoryData[response.data.id] = response.data;
-        });
-        setEduOrgs(categoryData);
-      })
-      .catch((error) => {
-        console.error("Error fetching educational organization data:", error);
-      });
-  }, [campuses]);
-
-  function fetchCampuses() {
-    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/campus/`, {
-      headers: {
-        Authorization: `Token ${token}`,
-      },
-    })
-      .then((response) => {
-        return response.json();
-      })
-      .then((data) => {
-        console.log(data)
-        setCampuses(data)
-      })
-      .catch((error) => console.error("Error fetching campus:", error));
-  }
+      setCountries(
+        Object.fromEntries(
+          countriesResponse.map((res) => [res.data.id, res.data])
+        )
+      );
+      setGeoAdmins1(
+        Object.fromEntries(
+          geoAdmin1Response.map((res) => [res.data.id, res.data])
+        )
+      );
+      setGeoAdmins2(
+        Object.fromEntries(
+          geoAdmin2Response.map((res) => [res.data.id, res.data])
+        )
+      );
+      setEduOrgs(
+        Object.fromEntries(eduOrgResponse.map((res) => [res.data.id, res.data]))
+      );
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    }
+  };
 
   useEffect(() => {
     if (!isAuthenticated) {
       router.push("/signin");
       return;
     }
+
     fetchCampuses();
-  }, []);
+  }, [isAuthenticated, router, token]);
 
   const deleteCampus = async (id) => {
-    const isConfirmed = confirm("Are you sure you want to delete this campus?");
-
-    if (isConfirmed) {
+    if (confirm("Are you sure you want to delete this campus?")) {
       try {
-        const token = getToken();
         const response = await axios.delete(
           `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/campus/${id}/`,
-          {
-            headers: {
-              Authorization: `Token ${token}`,
-            },
-            withCredentials: true,
-          }
+          { headers: { Authorization: `Token ${token}` } }
         );
 
         if (response.status === 204) {
-          // 204 No Content indicates successful deletion
           setCampuses((prevCampuses) =>
-            prevCampuses.filter((uni) => uni.id !== id)
+            prevCampuses.filter((campus) => campus.id !== id)
           );
           setSuccessMessage("Campus deleted successfully");
         } else {
-          console.error("Failed to delete Campus");
           setErrorMessage("Failed to delete Campus");
         }
       } catch (error) {
-        console.error("Error:", error);
         setErrorMessage(error.message);
       }
-    } else {
-      console.log("Deletion cancelled.");
     }
   };
 
@@ -218,36 +179,31 @@ export default function CampusList() {
       const response = await axios({
         url,
         method,
-        headers: {
-          Authorization: `Token ${getToken()}`,
-          "Content-Type": "application/json", // If data is JSON, otherwise adjust as needed
-        },
+        headers: { Authorization: `Token ${token}` },
         data,
       });
 
-      if (response.status === 200 || response.status === 201) {
+      if ([200, 201].includes(response.status)) {
         setSuccessMessage(
           formMode === "create"
             ? "Campus created successfully"
             : "Campus updated successfully"
         );
         fetchCampuses();
-        const offcanvasElement = document.getElementById("add-new-record");
-        const offcanvasInstance =
-          bootstrap.Offcanvas.getInstance(offcanvasElement);
-        if (offcanvasInstance) {
-          offcanvasInstance.hide();
-        }
+        bootstrap.Offcanvas.getInstance(
+          document.getElementById("add-new-record")
+        ).hide();
         setFormErrors({});
       } else {
         throw new Error("An error occurred. Please try again.");
       }
     } catch (error) {
-      console.error("Error:", error);
-      if (error.response.status === 400) {
+      if (error.response?.status === 400) {
         setFormErrors(error.response.data);
         setErrorMessage("Validation Failed");
-      } else setErrorMessage(error.message);
+      } else {
+        setErrorMessage(error.message);
+      }
     }
   };
 
@@ -258,7 +214,6 @@ export default function CampusList() {
   };
 
   const openEditForm = (campus) => {
-    console.log("Opening edit form for:", campus);
     setFormMode("edit");
     setSelectedCampus(campus);
     setShowOffcanvas(true);
@@ -266,16 +221,7 @@ export default function CampusList() {
   };
 
   const openShowView = (campus) => {
-    console.log("Opening show view for:", campus);
-    setViewCampus(campus); //
-    /*const detailsOffcanvas = document.getElementById('show-details');
-        const offcanvasInstance = bootstrap.Offcanvas.getInstance(detailsOffcanvas);
-        if (offcanvasInstance) {
-            offcanvasInstance.show();
-        } else {
-            const newOffcanvasInstance = new bootstrap.Offcanvas(detailsOffcanvas);
-            newOffcanvasInstance.show();
-        }*/
+    setViewCampus(campus);
   };
 
   return (
@@ -340,7 +286,7 @@ export default function CampusList() {
           {viewCampus ? (
             <ul className="list-group list-group-flush">
               <li className="list-group-item d-flex align-items-center">
-                {viewCampus.name}
+                {viewCampus.campus_name}
               </li>
               <li className="list-group-item d-flex align-items-center">
                 {viewCampus.statement}
@@ -363,7 +309,7 @@ export default function CampusList() {
                   data-bs-toggle="offcanvas"
                   data-bs-target="#add-new-record"
                   aria-controls="add-new-record"
-                  onClick={() => openCreateForm()}
+                  onClick={openCreateForm}
                 >
                   <span>
                     <i className="bx bx-plus me-sm-1" />{" "}
@@ -424,7 +370,9 @@ export default function CampusList() {
                     <td>
                       <span
                         className={`badge badge-pill ${
-                          campus.status === 'Active' ? "bg-success" : "bg-danger"
+                          campus.status === "Active"
+                            ? "bg-success"
+                            : "bg-danger"
                         }`}
                         style={{ borderRadius: "15px", fontSize: "12px" }}
                       >

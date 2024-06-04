@@ -188,11 +188,12 @@ export default function CampusForm({ mode, onSubmit, initialData, errors }) {
 
     submissionData.set("status", status === "active" ? "Active" : "Inactive");
 
-    for(let [key, value] of submissionData.entries()) {
-      console.log(key, value)
+    for (let [key, value] of submissionData.entries()) {
+      console.log(key, value);
     }
 
     onSubmit(submissionData);
+    resetForm();
   };
 
   const onCountrySelect = async (_country) => {
@@ -406,7 +407,9 @@ export default function CampusForm({ mode, onSubmit, initialData, errors }) {
         <button
           type="reset"
           className="btn btn-outline-secondary btn-sm"
-          onClick={resetForm}
+          data-bs-dismiss="offcanvas"
+          aria-label="Close"
+          // onClick={resetForm}
         >
           Cancel
         </button>

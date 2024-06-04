@@ -9,159 +9,155 @@ export default function UniversityForm({
   initialData,
   errors,
 }) {
-  const [name, setName] = useState("");
-  const [geo_admin_1, setGeoAdmin] = useState({
-    code: "",
+  const [formData, setFormData] = useState({
     name: "",
-    id: "",
+    geo_admin_1: { code: "", name: "", id: "" },
+    under_category: { code: "", name: "", id: "" },
+    country: { code: "", name: "", id: "" },
+    status: "",
+    web_address: "",
+    statement: "",
+    file: null,
   });
-  const [categories, setCategories] = useState([]);
-  const [under_category, setUnderCategory] = useState({
-    code: "",
-    name: "",
-    id: "",
+
+  const [dropdownData, setDropdownData] = useState({
+    countries: [],
+    categories: [],
+    states: [],
   });
-  const [country, setCountry] = useState({
-    code: "",
-    name: "",
-    id: "",
-  });
-  const [status, setStatus] = useState("");
-  const [web_address, setWebAdress] = useState("");
-  const [statement, setStatement] = useState("");
-  const [file, setFile] = useState(null);
-  const [countries, setCountries] = useState([]);
-  const [states, setStates] = useState();
+
   const [loading, setLoading] = useState(false);
   const token = getToken();
 
   useEffect(() => {
-    (async function () {
-      let res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/countries/`,
-        {
-          headers: {
-            Authorization: `Token ${token}`,
-          },
-        }
-      );
-      let data = await res.json();
+    const fetchDropdownData = async () => {
+      try {
+        const [countriesRes, categoriesRes] = await Promise.all([
+          axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/countries/`, {
+            headers: { Authorization: `Token ${token}` },
+          }),
+          axios.get(
+            `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/under_category/`,
+            {
+              headers: {
+                Authorization: `Token ${token}`,
+                "Content-Type": "application/json",
+              },
+            }
+          ),
+        ]);
 
-      setCountries(
-        data
-          ? data.map(({ country_code, country_name, id }) => ({
+        setDropdownData((prevState) => ({
+          ...prevState,
+          countries: countriesRes.data.map(
+            ({ country_code, country_name, id }) => ({
               code: country_code,
               name: country_name,
               id,
-            }))
-          : []
-      );
-
-      res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/under_category/`,
-        {
-          headers: {
-            Authorization: `Token ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      data = await res.json();
-
-      setCategories(
-        data
-          ? data.map(({ description, id, name }) => ({
-              name,
-              code: description,
-              id,
-            }))
-          : []
-      );
-    })();
-  }, []);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        if (mode === "edit" && initialData) {
-          setName(initialData.name);
-          setStatement(initialData.statement);
-          setWebAdress(initialData.web_address);
-
-          setStatus(initialData.status ? "active" : "inactive");
-
-          const [countryResponse, geoAdminResponse, categoryResponse] =
-            await Promise.all([
-              axios.get(
-                `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/countries/${initialData.country}/`,
-                { headers: { Authorization: `Token ${token}` } }
-              ),
-              axios.get(
-                `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/geo_admin1/${initialData.geo_admin_1}/`,
-                { headers: { Authorization: `Token ${token}` } }
-              ),
-              axios.get(
-                `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/under_category/${initialData.under_category}/`,
-                { headers: { Authorization: `Token ${token}` } }
-              ),
-            ]);
-          setCountry({
-            id: countryResponse.data.id,
-            name: countryResponse.data.country_name,
-            code: countryResponse.data.country_code,
-          });
-
-          setGeoAdmin({
-            id: geoAdminResponse.data.id,
-            name: geoAdminResponse.data.geo_admin_1_name,
-            code: geoAdminResponse.data.geo_admin_1_code,
-          });
-
-          setUnderCategory({
-            id: categoryResponse.data.id,
-            name: categoryResponse.data.name,
-            code: categoryResponse.data.description,
-          });
-
-          // Assuming onCountrySelect is used to set additional details or state based on country selection
-          onCountrySelect({
-            id: countryResponse.data.id,
-            name: countryResponse.data.country_name,
-            code: countryResponse.data.country_code,
-          });
-        } else {
-          resetForm();
-        }
+            })
+          ),
+          categories: categoriesRes.data.map(({ description, id, name }) => ({
+            name,
+            code: description,
+            id,
+          })),
+        }));
       } catch (error) {
-        console.error("Error fetching data:", error);
+        console.error("Error fetching dropdown data:", error);
       }
     };
 
-    fetchData();
-  }, [mode, initialData]);
+    fetchDropdownData();
+  }, [token]);
+
+  useEffect(() => {
+    if (mode === "edit" && initialData) {
+      const loadInitialData = async () => {
+        try {
+          const [country, geoAdmin1, category] = await Promise.all([
+            axios.get(
+              `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/countries/${initialData.country}/`,
+              { headers: { Authorization: `Token ${token}` } }
+            ),
+            axios.get(
+              `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/geo_admin1/${initialData.geo_admin_1}/`,
+              { headers: { Authorization: `Token ${token}` } }
+            ),
+            axios.get(
+              `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/under_category/${initialData.under_category}/`,
+              { headers: { Authorization: `Token ${token}` } }
+            ),
+          ]);
+
+          setFormData({
+            name: initialData.name,
+            statement: initialData.statement,
+            status: initialData.status,
+            country: {
+              id: country.data.id,
+              name: country.data.country_name,
+              code: country.data.country_code,
+            },
+            geo_admin_1: {
+              id: geoAdmin1.data.id,
+              name: geoAdmin1.data.geo_admin_1_name,
+              code: geoAdmin1.data.geo_admin_1_code,
+            },
+            under_category: {
+              id: category.data.id,
+              name: category.data.name,
+              code: category.data.description,
+            },
+            web_address: initialData.web_address,
+            file: null,
+          });
+
+          onCountrySelect({
+            id: country.data.id,
+            name: country.data.country_name,
+            code: country.data.country_code,
+          });
+        } catch (error) {
+          console.error("Error loading initial data:", error);
+        }
+      };
+
+      loadInitialData();
+    } else {
+      resetForm();
+    }
+  }, [mode, initialData, token]);
 
   const resetForm = () => {
-    setName("");
-    setStatement("");
-    setGeoAdmin({
-      code: "",
+    setFormData({
       name: "",
-      id: "",
+      geo_admin_1: { code: "", name: "", id: "" },
+      under_category: { code: "", name: "", id: "" },
+      country: { code: "", name: "", id: "" },
+      status: "",
+      web_address: "",
+      statement: "",
+      file: null,
     });
-    setUnderCategory("");
-    setCountry({
-      id: "",
-      code: "",
-      name: "",
-    });
-    setWebAdress("");
-    setStatus("");
-    setFile(null);
+  };
+
+  const handleChange = (field, value) => {
+    setFormData((prevState) => ({ ...prevState, [field]: value }));
   };
 
   const handleSubmit = (event) => {
     event.preventDefault();
+    const {
+      name,
+      country,
+      geo_admin_1,
+      under_category,
+      status,
+      statement,
+      web_address,
+      file,
+    } = formData;
+
     if (
       !name ||
       !country.id ||
@@ -173,43 +169,35 @@ export default function UniversityForm({
       alert("Fill all the required fields");
       return;
     }
-    const formData = new FormData();
-    formData.append("name", name);
-    formData.append("country", country.id);
-    formData.append("geo_admin_1", geo_admin_1.id);
-    formData.append("under_category", under_category.id);
-    formData.append("web_address", web_address);
-    formData.append("status", status === "active");
-    formData.append("statement", statement);
 
-    if (file) {
-      formData.append("document", file); //
+    const submissionData = new FormData();
+    Object.entries(formData).forEach(([key, value]) => {
+      if (value && typeof value === "object" && value.id) {
+        submissionData.append(key, value.id);
+      } else if (value !== null && value !== undefined) {
+        submissionData.append(key, value);
+      }
+    });
+
+    submissionData.set("status", status === "active");
+
+    for (let [key, value] of submissionData.entries()) {
+      console.log(key, value);
     }
 
-    onSubmit(formData);
-  };
-
-  const handleSubmit_ = (event) => {
-    event.preventDefault();
-    onSubmit({ name, statement });
-    resetForm();
-  };
-
-  const handleFileChange = (event) => {
-    setFile(event.target.files[0]);
+    onSubmit(submissionData);
+    // resetForm();
   };
 
   const onCountrySelect = async (_country) => {
-    setCountry(_country);
+    handleChange("country", _country);
     setLoading(true);
 
     try {
       const response = await axios.get(
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/geo_admin1/`,
         {
-          params: {
-            country_id: _country.id,
-          },
+          params: { country_id: _country.id },
           headers: {
             Authorization: `Token ${token}`,
             "Content-Type": "application/json",
@@ -217,14 +205,16 @@ export default function UniversityForm({
         }
       );
 
-      const data = response.data;
-      setStates(
-        data.map(({ geo_admin_1_code, geo_admin_1_name, id }) => ({
-          code: geo_admin_1_code,
-          name: geo_admin_1_name,
-          id,
-        }))
-      );
+      setDropdownData((prevState) => ({
+        ...prevState,
+        states: response.data.map(
+          ({ geo_admin_1_code, geo_admin_1_name, id }) => ({
+            code: geo_admin_1_code,
+            name: geo_admin_1_name,
+            id,
+          })
+        ),
+      }));
     } catch (error) {
       console.error("Error fetching geo admin data:", error.message);
     } finally {
@@ -250,14 +240,13 @@ export default function UniversityForm({
             name="name"
             placeholder="University of Idaho"
             aria-label="University of Idaho"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
+            value={formData.name}
+            onChange={(e) => handleChange("name", e.target.value)}
           />
           {errors?.name && (
             <div className="invalid-feedback d-block">{errors.name}</div>
           )}
         </div>
-        <div className="fv-plugins-message-container invalid-feedback" />
       </div>
 
       <div className="col-sm-12 fv-plugins-icon-container">
@@ -266,10 +255,14 @@ export default function UniversityForm({
         </label>
         <div className="input-group input-group-merge has-validation">
           <ComboBoxFreeSolo
-            data={categories}
-            defaultValue={under_category}
-            onValueChange={setUnderCategory}
-            type={"Category"}
+            data={dropdownData.categories}
+            defaultValue={{
+              id: formData.under_category.id,
+              name: formData.under_category.name,
+              code: formData.under_category.code,
+            }}
+            onValueChange={(value) => handleChange("under_category", value)}
+            type="Category"
           />
           {errors?.under_category && (
             <div className="invalid-feedback d-block">
@@ -277,7 +270,6 @@ export default function UniversityForm({
             </div>
           )}
         </div>
-        <div className="fv-plugins-message-container invalid-feedback" />
       </div>
 
       <div className="col-sm-12 fv-plugins-icon-container">
@@ -286,33 +278,37 @@ export default function UniversityForm({
         </label>
         <div className="input-group input-group-merge has-validation">
           <ComboBoxFreeSolo
-            data={countries}
-            defaultValue={country}
-            onValueChange={(e) => {
-              onCountrySelect(e);
+            data={dropdownData.countries}
+            defaultValue={{
+              id: formData.country.id,
+              name: formData.country.name,
+              code: formData.country.code,
             }}
-            type={"Country"}
+            onValueChange={onCountrySelect}
+            type="Country"
           />
-
           {errors?.country && (
             <div className="invalid-feedback d-block">{errors.country}</div>
           )}
         </div>
-        <div className="fv-plugins-message-container invalid-feedback" />
       </div>
 
-      {states && (
+      {dropdownData.states.length > 0 && (
         <div className="col-sm-12 fv-plugins-icon-container">
           <label className="form-label" htmlFor="geo_admin_1">
             State
           </label>
           <div className="input-group input-group-merge has-validation">
             <ComboBoxFreeSolo
-              data={states}
-              defaultValue={geo_admin_1}
-              onValueChange={setGeoAdmin}
-              type={"State"}
-              primary_key={country ? country.id : ""}
+              data={dropdownData.states}
+              defaultValue={{
+                id: formData.geo_admin_1.id,
+                name: formData.geo_admin_1.name,
+                code: formData.geo_admin_1.code,
+              }}
+              primary_key={formData.country.id}
+              onValueChange={(value) => handleChange("geo_admin_1", value)}
+              type="State"
             />
             {errors?.geo_admin_1 && (
               <div className="invalid-feedback d-block">
@@ -320,7 +316,6 @@ export default function UniversityForm({
               </div>
             )}
           </div>
-          <div className="fv-plugins-message-container invalid-feedback" />
         </div>
       )}
 
@@ -336,14 +331,13 @@ export default function UniversityForm({
             name="web_address"
             placeholder="https://test.com"
             aria-label="https://test.com"
-            value={web_address}
-            onChange={(e) => setWebAdress(e.target.value)}
+            value={formData.web_address}
+            onChange={(e) => handleChange("web_address", e.target.value)}
           />
           {errors?.web_address && (
             <div className="invalid-feedback d-block">{errors.web_address}</div>
           )}
         </div>
-        <div className="fv-plugins-message-container invalid-feedback" />
       </div>
 
       <div className="col-sm-12 fv-plugins-icon-container">
@@ -354,8 +348,8 @@ export default function UniversityForm({
           <select
             id="status"
             className="form-control"
-            value={status}
-            onChange={(e) => setStatus(e.target.value)}
+            value={formData.status ? "active" : "inactive"}
+            onChange={(e) => handleChange("status", e.target.value)}
             required
           >
             <option value="">Select status</option>
@@ -366,7 +360,6 @@ export default function UniversityForm({
             <div className="invalid-feedback d-block">{errors.status}</div>
           )}
         </div>
-        <div className="fv-plugins-message-container invalid-feedback" />
       </div>
 
       <div className="col-sm-12 fv-plugins-icon-container">
@@ -378,14 +371,13 @@ export default function UniversityForm({
             id="statement"
             className="form-control"
             aria-label="With textarea"
-            value={statement}
-            onChange={(e) => setStatement(e.target.value)}
+            value={formData.statement}
+            onChange={(e) => handleChange("statement", e.target.value)}
           ></textarea>
           {errors?.statement && (
             <div className="invalid-feedback d-block">{errors.statement}</div>
           )}
         </div>
-        <div className="fv-plugins-message-container invalid-feedback" />
       </div>
 
       <div className="col-sm-12">
@@ -396,7 +388,7 @@ export default function UniversityForm({
           type="file"
           id="fileUpload"
           name="fileUpload"
-          onChange={handleFileChange}
+          onChange={(e) => handleChange("file", e.target.files[0])}
           className="form-control"
         />
       </div>
@@ -411,7 +403,7 @@ export default function UniversityForm({
         <button
           type="reset"
           className="btn btn-outline-secondary btn-sm"
-          data-bs-dismiss="offcanvas"
+          onClick={resetForm}
         >
           Cancel
         </button>

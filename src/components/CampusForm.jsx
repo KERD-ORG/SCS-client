@@ -303,7 +303,6 @@ export default function CampusForm({ mode, onSubmit, initialData, errors }) {
             }}
             onValueChange={(value) => onCountrySelect(value)}
             type={"Country"}
-            freeSolo={true}
           />
           {errors?.country && (
             <div className="invalid-feedback d-block">{errors.country}</div>
@@ -323,7 +322,6 @@ export default function CampusForm({ mode, onSubmit, initialData, errors }) {
               onValueChange={(value) => handleChange("geo_admin_1", value)}
               type={"State"}
               country={formData.country.id}
-              freeSolo={true}
             />
             {errors?.geo_admin_1 && (
               <div className="invalid-feedback d-block">

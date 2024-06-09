@@ -10,6 +10,7 @@ import { useUserPermissions } from "../../contexts/UserPermissionsContext";
 import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import axios from "axios";
+import EducationalOrganizationForm from "@/components/EducationalOrganizationForm";
 
 export default function EducationalOrganizationList() {
   const [universities, setUniversities] = useState([]);
@@ -294,7 +295,7 @@ export default function EducationalOrganizationList() {
           />
         </div>
         <div className="offcanvas-body">
-          <UniversityForm
+          <EducationalOrganizationForm
             mode={formMode}
             initialData={selectedUniversity}
             onSubmit={handleFormSubmit}

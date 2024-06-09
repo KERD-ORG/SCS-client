@@ -5,7 +5,7 @@ import Autocomplete from "@mui/material/Autocomplete";
 export default function ComboBox({ data, defaultValue, onValueChange }) {
   return (
     <Autocomplete
-      value={defaultValue.label ? defaultValue : null}
+      value={defaultValue || { id: "", label: "" }}
       disablePortal
       id="combo-box-demo"
       options={data}

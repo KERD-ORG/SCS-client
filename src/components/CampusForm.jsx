@@ -20,8 +20,8 @@ export default function CampusForm({ mode, onSubmit, initialData, errors }) {
   const [dropdownData, setDropdownData] = useState({
     countries: [],
     edu_org_list: [],
-    states: [],
-    cities: [],
+    states: undefined,
+    cities: undefined,
   });
 
   const [loading, setLoading] = useState(false);
@@ -70,58 +70,82 @@ export default function CampusForm({ mode, onSubmit, initialData, errors }) {
   useEffect(() => {
     if (mode === "edit" && initialData) {
       const loadInitialData = async () => {
+        console.log(initialData);
         try {
-          const [country, geoAdmin1, eduOrg, geoAdmin2] = await Promise.all([
+          const [stateRes, orgRes, cityRes] = await Promise.allSettled([
             axios.get(
-              `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/countries/${initialData.country}/`,
+              `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/geo_admin1/?country=${initialData.country}`,
               { headers: { Authorization: `Token ${token}` } }
             ),
             axios.get(
-              `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/geo_admin1/${initialData.geo_admin_1}/`,
+              `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/educational_organizations/`,
               { headers: { Authorization: `Token ${token}` } }
             ),
             axios.get(
-              `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/educational_organizations/${initialData.educational_organization}/`,
-              { headers: { Authorization: `Token ${token}` } }
-            ),
-            axios.get(
-              `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/geo_admin2/${initialData.geo_admin_2}/`,
+              `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/geo_admin2/`,
               { headers: { Authorization: `Token ${token}` } }
             ),
           ]);
+          const updatedDropdownData = { ...dropdownData };
+
+          if (orgRes.status === "fulfilled") {
+            updatedDropdownData.edu_org_list = orgRes.value.data.map(
+              ({ id, name }) => ({
+                label: name,
+                id,
+              })
+            );
+          }
+
+          if (stateRes.status === "fulfilled") {
+            updatedDropdownData.states = stateRes.value.data.map(
+              ({ geo_admin_1_code, geo_admin_1_name, id }) => ({
+                code: geo_admin_1_code,
+                name: geo_admin_1_name,
+                id,
+              })
+            );
+          }
+
+          if (cityRes.status === "fulfilled") {
+            updatedDropdownData.cities = cityRes.value.data.map(
+              ({ id, geo_admin_2_name, country, geo_admin_1 }) => ({
+                name: geo_admin_2_name,
+                id,
+                country,
+                geo_admin_1,
+              })
+            );
+          }
+
+          setDropdownData(updatedDropdownData);
+
+          const countryData = updatedDropdownData.countries.find(
+            (c) => c.id === initialData.country
+          );
+          const stateData = updatedDropdownData.states.find(
+            (s) => s.id === initialData.geo_admin_1
+          );
+          const eduOrgData = updatedDropdownData.edu_org_list.find(
+            (org) => org.id === initialData.educational_organization
+          );
+          const cityData = updatedDropdownData.cities.find(
+            (city) => city.id === initialData.geo_admin_2
+          );
 
           setFormData({
             campus_name: initialData.campus_name,
             statement: initialData.statement,
             status: initialData.status === "Active" ? "active" : "inactive",
-            country: {
-              id: country.data.id,
-              name: country.data.country_name,
-              code: country.data.country_code,
+            country: countryData || { id: "", name: "", code: "" },
+            geo_admin_1: stateData || { id: "", name: "", code: "" },
+            educational_organization: eduOrgData || { id: "", label: "" },
+            geo_admin_2: cityData || {
+              id: "",
+              name: "",
+              country: "",
+              geo_admin_1: "",
             },
-            geo_admin_1: {
-              id: geoAdmin1.data.id,
-              name: geoAdmin1.data.geo_admin_1_name,
-              code: geoAdmin1.data.geo_admin_1_code,
-            },
-            educational_organization: {
-              id: eduOrg.data.id,
-              label: eduOrg.data.name,
-            },
-            geo_admin_2: {
-              id: geoAdmin2.data.id,
-              country: geoAdmin2.data.country,
-              name: geoAdmin2.data.geo_admin_2_name,
-              geo_admin_1: geoAdmin2.data.geo_admin_1,
-            },
-            web_address: "",
-            file: null,
-          });
-
-          onCountrySelect({
-            id: country.data.id,
-            name: country.data.country_name,
-            code: country.data.country_code,
           });
         } catch (error) {
           console.error("Error loading initial data:", error);
@@ -135,6 +159,7 @@ export default function CampusForm({ mode, onSubmit, initialData, errors }) {
   }, [mode, initialData, token]);
 
   const resetForm = () => {
+    setDropdownData({ ...dropdownData, states: undefined, cities: undefined });
     setFormData({
       campus_name: "",
       geo_admin_1: { code: "", name: "", id: "" },
@@ -142,9 +167,7 @@ export default function CampusForm({ mode, onSubmit, initialData, errors }) {
       country: { code: "", name: "", id: "" },
       geo_admin_2: { name: "", id: "", country: "", geo_admin_1: "" },
       status: "",
-      web_address: "",
       statement: "",
-      file: null,
     });
   };
 
@@ -160,7 +183,6 @@ export default function CampusForm({ mode, onSubmit, initialData, errors }) {
       geo_admin_1,
       educational_organization,
       status,
-      statement,
       geo_admin_2,
     } = formData;
 
@@ -170,7 +192,6 @@ export default function CampusForm({ mode, onSubmit, initialData, errors }) {
       !geo_admin_1.id ||
       !educational_organization.id ||
       !status ||
-      !statement ||
       !geo_admin_2.id
     ) {
       alert("Fill all the required fields");
@@ -197,46 +218,94 @@ export default function CampusForm({ mode, onSubmit, initialData, errors }) {
   };
 
   const onCountrySelect = async (_country) => {
-    handleChange("country", _country);
+    setFormData({
+      ...formData,
+      country: _country,
+      geo_admin_2: { name: "", id: "", country: "", geo_admin_1: "" },
+      geo_admin_1: { code: "", name: "", id: "" },
+    });
     setLoading(true);
 
     try {
-      const [statesRes, citiesRes] = await Promise.all([
-        axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/geo_admin1/`, {
-          params: { country_id: _country.id },
+      const statesRes = await axios.get(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/geo_admin1/?country=${_country.id}`,
+        {
           headers: {
             Authorization: `Token ${token}`,
             "Content-Type": "application/json",
           },
-        }),
-        axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/geo_admin2/`, {
-          headers: {
-            Authorization: `Token ${token}`,
-            "Content-Type": "application/json",
-          },
-        }),
-      ]);
+        }
+      );
 
-      setDropdownData((prevState) => ({
-        ...prevState,
-        states: statesRes.data.map(
+      let statesData = [];
+
+      if (statesRes.data.length) {
+        statesData = statesRes.data.map(
           ({ geo_admin_1_code, geo_admin_1_name, id }) => ({
             code: geo_admin_1_code,
             name: geo_admin_1_name,
             id,
           })
-        ),
-        cities: citiesRes.data.map(
+        );
+      }
+
+      setDropdownData((prevState) => ({
+        ...prevState,
+        states: statesData,
+        cities: undefined, // Reset cities when a new country is selected
+      }));
+    } catch (error) {
+      console.error("Error fetching states data:", error.message);
+      setDropdownData((prevState) => ({
+        ...prevState,
+      }));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onStateSelect = async (_state) => {
+    setFormData({
+      ...formData,
+      geo_admin_2: { name: "", id: "", country: "", geo_admin_1: "" },
+      geo_admin_1: _state,
+    });
+    console.log(_state);
+    setLoading(true);
+
+    try {
+      const citiesRes = await axios.get(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/geo_admin2/?geo_admin_1=${_state.id}&&country=${formData.country.id}`,
+        {
+          headers: {
+            Authorization: `Token ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      let citiesData = [];
+
+      if (citiesRes.data.length) {
+        citiesData = citiesRes.data.map(
           ({ id, geo_admin_2_name, country, geo_admin_1 }) => ({
             name: geo_admin_2_name,
             id,
             country,
             geo_admin_1,
           })
-        ),
+        );
+      }
+
+      setDropdownData((prevState) => ({
+        ...prevState,
+        cities: citiesData,
       }));
     } catch (error) {
-      console.error("Error fetching geo admin data:", error.message);
+      console.error("Error fetching cities data:", error.message);
+      setDropdownData((prevState) => ({
+        ...prevState,
+      }));
     } finally {
       setLoading(false);
     }
@@ -297,9 +366,9 @@ export default function CampusForm({ mode, onSubmit, initialData, errors }) {
           <ComboBoxFreeSolo
             data={dropdownData.countries}
             defaultValue={{
-              id: formData.country.id,
-              name: formData.country.name,
-              code: formData.country.code,
+              id: formData.country?.id,
+              name: formData.country?.name,
+              code: formData.country?.code,
             }}
             onValueChange={(value) => onCountrySelect(value)}
             type={"Country"}
@@ -310,7 +379,7 @@ export default function CampusForm({ mode, onSubmit, initialData, errors }) {
         </div>
       </div>
 
-      {dropdownData.states.length > 0 && (
+      {dropdownData.states && (
         <div className="col-sm-12 fv-plugins-icon-container">
           <label className="form-label" htmlFor="geo_admin_1">
             State
@@ -319,9 +388,9 @@ export default function CampusForm({ mode, onSubmit, initialData, errors }) {
             <ComboBoxFreeSolo
               data={dropdownData.states}
               defaultValue={formData.geo_admin_1}
-              onValueChange={(value) => handleChange("geo_admin_1", value)}
+              onValueChange={(value) => onStateSelect(value)}
               type={"State"}
-              country={formData.country.id}
+              country={formData.country?.id}
             />
             {errors?.geo_admin_1 && (
               <div className="invalid-feedback d-block">
@@ -332,7 +401,7 @@ export default function CampusForm({ mode, onSubmit, initialData, errors }) {
         </div>
       )}
 
-      {dropdownData.cities.length > 0 && (
+      {dropdownData.cities && (
         <div className="col-sm-12 fv-plugins-icon-container">
           <label className="form-label" htmlFor="geo_admin_2">
             City
@@ -343,8 +412,8 @@ export default function CampusForm({ mode, onSubmit, initialData, errors }) {
               defaultValue={formData.geo_admin_2}
               onValueChange={(value) => handleChange("geo_admin_2", value)}
               type={"City"}
-              country={formData.country.id}
-              geo_admin_1={formData.geo_admin_1.id}
+              country={formData.country?.id}
+              geo_admin_1={formData.geo_admin_1?.id}
             />
             {errors?.geo_admin_2 && (
               <div className="invalid-feedback d-block">

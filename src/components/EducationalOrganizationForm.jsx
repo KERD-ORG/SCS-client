@@ -3,7 +3,7 @@ import ComboBoxFreeSolo from "./ComboBoxFreeSolo";
 import { getToken } from "@/utils/auth";
 import axios from "axios";
 
-export default function UniversityForm({
+export default function EducationalOrganizationForm({
   mode,
   onSubmit,
   initialData,
@@ -23,7 +23,7 @@ export default function UniversityForm({
   const [dropdownData, setDropdownData] = useState({
     countries: [],
     categories: [],
-    states: [],
+    states: undefined,
   });
 
   const [loading, setLoading] = useState(false);
@@ -74,13 +74,9 @@ export default function UniversityForm({
     if (mode === "edit" && initialData) {
       const loadInitialData = async () => {
         try {
-          const [country, geoAdmin1, category] = await Promise.all([
+          const [stateRes, categoryRes] = await Promise.allSettled([
             axios.get(
-              `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/countries/${initialData.country}/`,
-              { headers: { Authorization: `Token ${token}` } }
-            ),
-            axios.get(
-              `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/geo_admin1/${initialData.geo_admin_1}/`,
+              `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/geo_admin1/?country=${initialData.country}`,
               { headers: { Authorization: `Token ${token}` } }
             ),
             axios.get(
@@ -89,33 +85,40 @@ export default function UniversityForm({
             ),
           ]);
 
+          const updatedDropdownData = { ...dropdownData };
+
+          if (stateRes.status === "fulfilled") {
+            updatedDropdownData.states = stateRes.value.data.map(
+              ({ geo_admin_1_code, geo_admin_1_name, id }) => ({
+                code: geo_admin_1_code,
+                name: geo_admin_1_name,
+                id,
+              })
+            );
+          }
+
+          let tempCat = { id: "", name: "", code: "" };
+
+          if (categoryRes.status === "fulfilled") {
+            tempCat = categoryRes.value.data;
+          }
+
+          const countryData = updatedDropdownData.countries.find(
+            (c) => c.id === initialData.country
+          );
+          const stateData = updatedDropdownData.states.find(
+            (s) => s.id === initialData.geo_admin_1
+          );
+
           setFormData({
             name: initialData.name,
             statement: initialData.statement,
             status: initialData.status ? "active" : "inactive",
-            country: {
-              id: country.data.id,
-              name: country.data.country_name,
-              code: country.data.country_code,
-            },
-            geo_admin_1: {
-              id: geoAdmin1.data.id,
-              name: geoAdmin1.data.geo_admin_1_name,
-              code: geoAdmin1.data.geo_admin_1_code,
-            },
-            under_category: {
-              id: category.data.id,
-              name: category.data.name,
-              code: category.data.description,
-            },
+            country: countryData || { id: "", name: "", code: "" },
+            geo_admin_1: stateData || { id: "", name: "", code: "" },
+            under_category: tempCat || { id: "", name: "", code: "" },
             web_address: initialData.web_address,
             file: null,
-          });
-
-          onCountrySelect({
-            id: country.data.id,
-            name: country.data.country_name,
-            code: country.data.country_code,
           });
         } catch (error) {
           console.error("Error loading initial data:", error);
@@ -129,6 +132,8 @@ export default function UniversityForm({
   }, [mode, initialData, token]);
 
   const resetForm = () => {
+    setDropdownData({ ...dropdownData, states: undefined });
+
     setFormData({
       name: "",
       geo_admin_1: { code: "", name: "", id: "" },
@@ -186,9 +191,8 @@ export default function UniversityForm({
 
     try {
       const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/geo_admin1/`,
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/geo_admin1/?country=${_country.id}`,
         {
-          params: { country_id: _country.id },
           headers: {
             Authorization: `Token ${token}`,
             "Content-Type": "application/json",
@@ -284,7 +288,7 @@ export default function UniversityForm({
         </div>
       </div>
 
-      {dropdownData.states.length > 0 && (
+      {dropdownData.states && (
         <div className="col-sm-12 fv-plugins-icon-container">
           <label className="form-label" htmlFor="geo_admin_1">
             State
@@ -297,7 +301,7 @@ export default function UniversityForm({
                 name: formData.geo_admin_1?.name,
                 code: formData.geo_admin_1?.code,
               }}
-              primary_key={formData.country.id}
+              primary_key={formData.country?.id}
               onValueChange={(value) => handleChange("geo_admin_1", value)}
               type="State"
             />

@@ -1,15 +1,17 @@
-import * as React from "react";
-import TextField from "@mui/material/TextField";
-import Dialog from "@mui/material/Dialog";
-import DialogTitle from "@mui/material/DialogTitle";
-import DialogContent from "@mui/material/DialogContent";
-import DialogContentText from "@mui/material/DialogContentText";
-import DialogActions from "@mui/material/DialogActions";
-import Button from "@mui/material/Button";
-import Autocomplete, { createFilterOptions } from "@mui/material/Autocomplete";
-import toast from "react-hot-toast";
-import { getToken } from "@/utils/auth";
+import React, { useState } from "react";
+import {
+  Autocomplete,
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  TextField,
+  createFilterOptions,
+  DialogActions,
+  Button,
+} from "@mui/material";
+import toast, { Toaster } from "react-hot-toast";
 import axios from "axios";
+import { getToken } from "@/utils/auth";
 
 const filter = createFilterOptions();
 
@@ -18,56 +20,48 @@ export default function ComboBoxFreeSolo({
   type = "Country",
   data,
   onValueChange,
-  ...restProp
+  ...restProps
 }) {
-  const [open, toggleOpen] = React.useState(false);
-  const [dialogValue, setDialogValue] = React.useState({
-    name: "",
-    code: "",
-  });
+  const [open, setOpen] = useState(false);
+  const [dialogValue, setDialogValue] = useState({ name: "", code: "" });
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-
     if (!dialogValue.name || !dialogValue.code) {
-      return toast.error("Fill all the fields");
+      return toast.error("Fill all the fields", { position: "top-center" });
     }
 
-    const url =
-      type === "Country"
-        ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/countries/`
-        : type === "State"
-        ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/geo_admin1/`
-        : type === "City"
-        ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/geo_admin2/`
-        : `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/under_category/`;
+    const urlMap = {
+      Country: `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/countries/`,
+      State: `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/geo_admin1/`,
+      City: `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/geo_admin2/`,
+      Category: `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/under_category/`,
+    };
 
-    const data =
-      type === "Country"
-        ? {
-            country_name: dialogValue.name,
-            country_code: dialogValue.code,
-          }
-        : type === "State"
-        ? {
-            geo_admin_1_code: dialogValue.code,
-            geo_admin_1_name: dialogValue.name,
-            country: restProp.primary_key,
-          }
-        : type === "City"
-        ? {
-            geo_admin_2_name: dialogValue.name,
-            geo_admin_2_code: dialogValue.code,
-            country: restProp.country,
-            geo_admin_1: restProp.geo_admin_1,
-          }
-        : {
-            name: dialogValue.name,
-            description: dialogValue.code,
-          };
+    const dataMap = {
+      Country: {
+        country_name: dialogValue.name,
+        country_code: dialogValue.code,
+      },
+      State: {
+        geo_admin_1_code: dialogValue.code,
+        geo_admin_1_name: dialogValue.name,
+        country: restProps.country,
+      },
+      City: {
+        geo_admin_2_name: dialogValue.name,
+        geo_admin_2_code: dialogValue.code,
+        country: restProps.country,
+        geo_admin_1: restProps.geo_admin_1,
+      },
+      Category: {
+        name: dialogValue.name,
+        description: dialogValue.code,
+      },
+    };
 
     try {
-      await axios.post(url, data, {
+      const res = await axios.post(urlMap[type], dataMap[type], {
         headers: {
           Authorization: `Token ${getToken()}`,
           "Content-Type": "application/json",
@@ -75,31 +69,24 @@ export default function ComboBoxFreeSolo({
       });
       window.location.reload();
     } catch (error) {
-      console.error("Error:", error);
+      console.log(error);
       toast.error(error.message);
     }
   };
 
   return (
-    <React.Fragment>
+    <>
       <Autocomplete
-        value={defaultValue}
+        value={defaultValue || { name: "", code: "" }}
         onChange={(event, newValue) => {
           if (typeof newValue === "string") {
-            // timeout to avoid instant validation of the dialog's form.
             setTimeout(() => {
-              toggleOpen(true);
-              setDialogValue({
-                name: newValue,
-                code: "",
-              });
+              setOpen(true);
+              setDialogValue({ name: newValue, code: "" });
             });
           } else if (newValue && newValue.inputValue) {
-            toggleOpen(true);
-            setDialogValue({
-              name: newValue.inputValue,
-              code: "",
-            });
+            setOpen(true);
+            setDialogValue({ name: newValue.inputValue, code: "" });
           } else {
             onValueChange(newValue);
           }
@@ -119,65 +106,58 @@ export default function ComboBoxFreeSolo({
         id={`free-solo-dialog-demo-${type}`}
         options={data}
         getOptionLabel={(option) => {
-          // for example value selected with enter, right from the input
-          if (typeof option === "string") {
-            return option;
-          }
-          if (option.inputValue) {
-            return option.inputValue;
-          }
-          return option.name;
+          return typeof option === "string"
+            ? option
+            : option.name
+            ? option.name
+            : "";
         }}
+        renderOption={(props, option) => <li {...props}>{option.name}</li>}
         selectOnFocus
         clearOnBlur
         handleHomeEndKeys
-        renderOption={(props, option) => <li {...props}>{option["name"]}</li>}
+        freeSolo
         size="small"
         style={{ width: "100%" }}
-        freeSolo
         renderInput={(params) => <TextField {...params} />}
       />
-      <Dialog open={open} onClose={() => toggleOpen(false)} disablePortal>
+      <Dialog open={open} onClose={() => setOpen(false)} disablePortal>
         <form>
+          <Toaster />
           <DialogTitle>Add a new {type}</DialogTitle>
           <DialogContent>
             <TextField
-              style={{ marginRight: "20px" }}
               autoFocus
               margin="dense"
               id="name"
               value={dialogValue.name}
               onChange={(event) =>
-                setDialogValue({
-                  ...dialogValue,
-                  name: event.target.value,
-                })
+                setDialogValue({ ...dialogValue, name: event.target.value })
               }
               label={`${type} name`}
               type="text"
-              variant="standard"
+              fullWidth
             />
             <TextField
               margin="dense"
-              id="name"
+              id="code"
               value={dialogValue.code}
               onChange={(event) =>
-                setDialogValue({
-                  ...dialogValue,
-                  code: event.target.value,
-                })
+                setDialogValue({ ...dialogValue, code: event.target.value })
               }
               label={type === "Category" ? "Description" : `${type} code`}
               type="text"
-              variant="standard"
+              fullWidth
             />
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => toggleOpen(false)}>Cancel</Button>
-            <Button onClick={handleSubmit}>Add</Button>
+            <Button onClick={() => setOpen(false)}>Cancel</Button>
+            <Button type="submit" onClick={handleSubmit}>
+              Add
+            </Button>
           </DialogActions>
         </form>
       </Dialog>
-    </React.Fragment>
+    </>
   );
 }

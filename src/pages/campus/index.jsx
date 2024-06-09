@@ -79,8 +79,8 @@ export default function CampusList() {
         geoAdmin1Response,
         geoAdmin2Response,
         eduOrgResponse,
-      ] = await Promise.all([
-        Promise.all(
+      ] = await Promise.allSettled([
+        Promise.allSettled(
           countryIds.map((id) =>
             axios.get(
               `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/countries/${id}/`,
@@ -88,7 +88,7 @@ export default function CampusList() {
             )
           )
         ),
-        Promise.all(
+        Promise.allSettled(
           geoAdminIds1.map((id) =>
             axios.get(
               `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/geo_admin1/${id}/`,
@@ -96,7 +96,7 @@ export default function CampusList() {
             )
           )
         ),
-        Promise.all(
+        Promise.allSettled(
           geoAdminIds2.map((id) =>
             axios.get(
               `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/geo_admin2/${id}/`,
@@ -104,7 +104,7 @@ export default function CampusList() {
             )
           )
         ),
-        Promise.all(
+        Promise.allSettled(
           eduOrgIds.map((id) =>
             axios.get(
               `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/educational_organizations/${id}/`,
@@ -114,24 +114,36 @@ export default function CampusList() {
         ),
       ]);
 
-      setCountries(
-        Object.fromEntries(
-          countriesResponse.map((res) => [res.data.id, res.data])
-        )
+      console.log(eduOrgResponse);
+
+      const processResponses = (responses) => {
+        return responses.map((res) =>
+          res.status === "fulfilled" ? res.value.data : { name: "null" }
+        );
+      };
+
+      const countriesData = processResponses(countriesResponse.value);
+      const geoAdmins1Data = processResponses(geoAdmin1Response.value);
+      const geoAdmins2Data = processResponses(geoAdmin2Response.value);
+      const eduOrgsData = processResponses(eduOrgResponse.value);
+
+      const countries = Object.fromEntries(
+        countryIds.map((id, index) => [id, countriesData[index]])
       );
-      setGeoAdmins1(
-        Object.fromEntries(
-          geoAdmin1Response.map((res) => [res.data.id, res.data])
-        )
+      const geoAdmins1 = Object.fromEntries(
+        geoAdminIds1.map((id, index) => [id, geoAdmins1Data[index]])
       );
-      setGeoAdmins2(
-        Object.fromEntries(
-          geoAdmin2Response.map((res) => [res.data.id, res.data])
-        )
+      const geoAdmins2 = Object.fromEntries(
+        geoAdminIds2.map((id, index) => [id, geoAdmins2Data[index]])
       );
-      setEduOrgs(
-        Object.fromEntries(eduOrgResponse.map((res) => [res.data.id, res.data]))
+      const eduOrgs = Object.fromEntries(
+        eduOrgIds.map((id, index) => [id, eduOrgsData[index]])
       );
+
+      setCountries(countries);
+      setGeoAdmins1(geoAdmins1);
+      setGeoAdmins2(geoAdmins2);
+      setEduOrgs(eduOrgs);
     } catch (error) {
       console.error("Error fetching data:", error);
     }

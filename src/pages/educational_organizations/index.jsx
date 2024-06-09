@@ -53,97 +53,89 @@ export default function EducationalOrganizationList() {
       .split("=")[1];
   }
 
-  useEffect(() => {
-    // Fetch all country and geo admin details concurrently
-    const countryIds = [
-      ...new Set(universities.map((university) => university.country)),
-    ];
-    const geoAdminIds = [
-      ...new Set(universities.map((university) => university.geo_admin_1)),
-    ];
-    const categoriesIds = [
-      ...new Set(universities.map((university) => university.under_category)),
-    ];
-
-    const fetchCountryPromises = countryIds.map((id) =>
-      axios.get(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/countries/${id}/`,
+  const fetchUniversities = async () => {
+    try {
+      const universityResponse = await axios.get(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/educational_organizations/`,
         {
-          headers: { Authorization: `Token ${token}` },
+          headers: {
+            Authorization: `Token ${token}`,
+          },
         }
-      )
-    );
-    const fetchGeoAdminPromises = geoAdminIds.map((id) =>
-      axios.get(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/geo_admin1/${id}/`,
-        {
-          headers: { Authorization: `Token ${token}` },
-        }
-      )
-    );
-    const fetchCategoriesPromises = categoriesIds.map((id) =>
-      axios.get(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/under_category/${id}/`,
-        {
-          headers: { Authorization: `Token ${token}` },
-        }
-      )
-    );
-
-    Promise.all(fetchCountryPromises)
-      .then((responses) => {
-        const countriesData = {};
-        responses.forEach((response) => {
-          countriesData[response.data.id] = response.data;
-        });
-        setCountries(countriesData);
-      })
-      .catch((error) => {
-        console.error("Error fetching country data:", error);
-      });
-
-    Promise.all(fetchGeoAdminPromises)
-      .then((responses) => {
-        const geoAdminsData = {};
-        responses.forEach((response) => {
-          geoAdminsData[response.data.id] = response.data;
-        });
-        setGeoAdmins(geoAdminsData);
-      })
-      .catch((error) => {
-        console.error("Error fetching geo admin data:", error);
-      });
-
-    Promise.all(fetchCategoriesPromises)
-      .then((responses) => {
-        const categoryData = {};
-        responses.forEach((response) => {
-          categoryData[response.data.id] = response.data;
-        });
-        setCategories(categoryData);
-      })
-      .catch((error) => {
-        console.error("Error fetching geo admin data:", error);
-      });
-  }, [universities]);
-
-  function fetchUniversities() {
-    fetch(
-      `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/educational_organizations/`,
-      {
-        headers: {
-          Authorization: `Token ${token}`,
-        },
-      }
-    )
-      .then((response) => {
-        return response.json();
-      })
-      .then((data) => setUniversities(data))
-      .catch((error) =>
-        console.error("Error fetching educational organizations:", error)
       );
-  }
+      setUniversities(universityResponse.data);
+
+      const countryIds = [
+        ...new Set(
+          universityResponse.data.map((university) => university.country)
+        ),
+      ];
+      const geoAdminIds = [
+        ...new Set(
+          universityResponse.data.map((university) => university.geo_admin_1)
+        ),
+      ];
+      const categoriesIds = [
+        ...new Set(
+          universityResponse.data.map((university) => university.under_category)
+        ),
+      ];
+
+      const [countryResponses, geoAdminResponses, categoryResponses] =
+        await Promise.allSettled([
+          Promise.allSettled(
+            countryIds.map((id) =>
+              axios.get(
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/countries/${id}/`,
+                { headers: { Authorization: `Token ${token}` } }
+              )
+            )
+          ),
+          Promise.allSettled(
+            geoAdminIds.map((id) =>
+              axios.get(
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/geo_admin1/${id}/`,
+                { headers: { Authorization: `Token ${token}` } }
+              )
+            )
+          ),
+          Promise.allSettled(
+            categoriesIds.map((id) =>
+              axios.get(
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/under_category/${id}/`,
+                { headers: { Authorization: `Token ${token}` } }
+              )
+            )
+          ),
+        ]);
+
+      const processResponses = (responses) => {
+        return responses.map((res) =>
+          res.status === "fulfilled" ? res.value.data : { name: "null" }
+        );
+      };
+
+      const countriesData = processResponses(countryResponses.value);
+      const geoAdminsData = processResponses(geoAdminResponses.value);
+      const categoriesData = processResponses(categoryResponses.value);
+
+      const countries = Object.fromEntries(
+        countryIds.map((id, index) => [id, countriesData[index]])
+      );
+      const geoAdmins = Object.fromEntries(
+        geoAdminIds.map((id, index) => [id, geoAdminsData[index]])
+      );
+      const categories = Object.fromEntries(
+        categoriesIds.map((id, index) => [id, categoriesData[index]])
+      );
+
+      setCountries(countries);
+      setGeoAdmins(geoAdmins);
+      setCategories(categories);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    }
+  };
 
   useEffect(() => {
     if (!isAuthenticated) {

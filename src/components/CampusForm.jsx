@@ -1,10 +1,18 @@
 import { useState, useEffect } from "react";
 import ComboBoxFreeSolo from "./ComboBoxFreeSolo";
 import { getToken } from "@/utils/auth";
-import axios from "axios";
+import { executeAjaxOperation } from "@/utils/fetcher";
+import { useRouter } from "next/router";
+import toast, { Toaster } from "react-hot-toast";
 import ComboBox from "./ComboBox";
 
-export default function CampusForm({ mode, onSubmit, initialData, errors }) {
+export default function CampusForm({
+  mode,
+  onSubmit,
+  initialData,
+  errors: error,
+}) {
+  const [errors, setErrors] = useState(error ? { ...error } : {});
   const [formData, setFormData] = useState({
     campus_name: "",
     geo_admin_1: { code: "", name: "", id: "" },
@@ -26,39 +34,53 @@ export default function CampusForm({ mode, onSubmit, initialData, errors }) {
 
   const [loading, setLoading] = useState(false);
   const token = getToken();
+  const router = useRouter();
 
   useEffect(() => {
     const fetchDropdownData = async () => {
       try {
+        // Fetch countries and educational organizations
         const [countriesRes, eduOrgsRes] = await Promise.all([
-          axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/countries/`, {
-            headers: { Authorization: `Token ${token}` },
+          executeAjaxOperation({
+            url: `/api/countries/`,
+            token,
+            locale: router.locale,
           }),
-          axios.get(
-            `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/educational_organizations/`,
-            {
-              headers: {
-                Authorization: `Token ${token}`,
-                "Content-Type": "application/json",
-              },
-            }
-          ),
+          executeAjaxOperation({
+            url: `/api/educational_organizations/`,
+            token,
+            locale: router.locale,
+          }),
         ]);
 
-        setDropdownData((prevState) => ({
-          ...prevState,
-          countries: countriesRes.data.map(
-            ({ country_code, country_name, id }) => ({
-              code: country_code,
-              name: country_name,
+        // Handle countries response
+        if (countriesRes.success) {
+          setDropdownData((prevState) => ({
+            ...prevState,
+            countries: countriesRes.data.map(
+              ({ country_code, country_name, id }) => ({
+                code: country_code,
+                name: country_name,
+                id,
+              })
+            ),
+          }));
+        } else {
+          toast.error(countriesRes.error);
+        }
+
+        // Handle educational organizations response
+        if (eduOrgsRes.success) {
+          setDropdownData((prevState) => ({
+            ...prevState,
+            edu_org_list: eduOrgsRes.data.map(({ id, name }) => ({
+              label: name,
               id,
-            })
-          ),
-          edu_org_list: eduOrgsRes.data.map(({ id, name }) => ({
-            label: name,
-            id,
-          })),
-        }));
+            })),
+          }));
+        } else {
+          toast.error(eduOrgsRes.error);
+        }
       } catch (error) {
         console.error("Error fetching dropdown data:", error);
       }
@@ -70,34 +92,23 @@ export default function CampusForm({ mode, onSubmit, initialData, errors }) {
   useEffect(() => {
     if (mode === "edit" && initialData) {
       const loadInitialData = async () => {
-        console.log(initialData);
         try {
-          const [stateRes, orgRes, cityRes] = await Promise.allSettled([
-            axios.get(
-              `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/geo_admin1/?country=${initialData.country}`,
-              { headers: { Authorization: `Token ${token}` } }
-            ),
-            axios.get(
-              `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/educational_organizations/`,
-              { headers: { Authorization: `Token ${token}` } }
-            ),
-            axios.get(
-              `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/geo_admin2/`,
-              { headers: { Authorization: `Token ${token}` } }
-            ),
+          const [stateRes, cityRes] = await Promise.allSettled([
+            executeAjaxOperation({
+              url: `/api/geo_admin1/?country=${initialData.country}`,
+              token,
+              locale: router.locale,
+            }),
+            executeAjaxOperation({
+              url: `/api/geo_admin2/?geo_admin_1=${initialData.geo_admin_1}&&country=${initialData.country}`,
+              token,
+              locale: router.locale,
+            }),
           ]);
+
           const updatedDropdownData = { ...dropdownData };
 
-          if (orgRes.status === "fulfilled") {
-            updatedDropdownData.edu_org_list = orgRes.value.data.map(
-              ({ id, name }) => ({
-                label: name,
-                id,
-              })
-            );
-          }
-
-          if (stateRes.status === "fulfilled") {
+          if (stateRes.status === "fulfilled" && stateRes.value.success) {
             updatedDropdownData.states = stateRes.value.data.map(
               ({ geo_admin_1_code, geo_admin_1_name, id }) => ({
                 code: geo_admin_1_code,
@@ -107,7 +118,7 @@ export default function CampusForm({ mode, onSubmit, initialData, errors }) {
             );
           }
 
-          if (cityRes.status === "fulfilled") {
+          if (cityRes.status === "fulfilled" && cityRes.value.success) {
             updatedDropdownData.cities = cityRes.value.data.map(
               ({ id, geo_admin_2_name, country, geo_admin_1 }) => ({
                 name: geo_admin_2_name,
@@ -186,15 +197,26 @@ export default function CampusForm({ mode, onSubmit, initialData, errors }) {
       geo_admin_2,
     } = formData;
 
-    if (
-      !campus_name ||
-      !country.id ||
-      !geo_admin_1.id ||
-      !educational_organization.id ||
-      !status ||
-      !geo_admin_2.id
-    ) {
-      alert("Fill all the required fields");
+    const err = {};
+
+    // Validation check for required fields
+    if (!campus_name) {
+      err.campus_name = ["Campus name is required"];
+    }
+    if (!country || !country.id) {
+      err.country = ["Country is required"];
+    }
+    if (!geo_admin_1 || !geo_admin_1.id) {
+      err.geo_admin_1 = ["State is required"];
+    }
+    if (!educational_organization || !educational_organization.id) {
+      err.educational_organization = ["Educational organization is required"];
+    }
+    if (!geo_admin_2 || !geo_admin_2.id) {
+      err.geo_admin_2 = ["City is required"];
+    }
+    if (Object.keys(err).length > 0) {
+      setErrors(err);
       return;
     }
 
@@ -208,10 +230,6 @@ export default function CampusForm({ mode, onSubmit, initialData, errors }) {
     });
 
     submissionData.set("status", status === "active" ? "Active" : "Inactive");
-
-    for (let [key, value] of submissionData.entries()) {
-      console.log(key, value);
-    }
 
     onSubmit(submissionData);
     resetForm();
@@ -227,38 +245,25 @@ export default function CampusForm({ mode, onSubmit, initialData, errors }) {
     setLoading(true);
 
     try {
-      const statesRes = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/geo_admin1/?country=${_country.id}`,
-        {
-          headers: {
-            Authorization: `Token ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      const response = await executeAjaxOperation({
+        url: `/api/geo_admin1/?country=${_country.id}`,
+        token,
+        locale: router.locale,
+      });
 
-      let statesData = [];
-
-      if (statesRes.data.length) {
-        statesData = statesRes.data.map(
+      setDropdownData((prevState) => ({
+        ...prevState,
+        states: response.data.map(
           ({ geo_admin_1_code, geo_admin_1_name, id }) => ({
             code: geo_admin_1_code,
             name: geo_admin_1_name,
             id,
           })
-        );
-      }
-
-      setDropdownData((prevState) => ({
-        ...prevState,
-        states: statesData,
+        ),
         cities: undefined, // Reset cities when a new country is selected
       }));
     } catch (error) {
       console.error("Error fetching states data:", error.message);
-      setDropdownData((prevState) => ({
-        ...prevState,
-      }));
     } finally {
       setLoading(false);
     }
@@ -270,45 +275,44 @@ export default function CampusForm({ mode, onSubmit, initialData, errors }) {
       geo_admin_2: { name: "", id: "", country: "", geo_admin_1: "" },
       geo_admin_1: _state,
     });
-    console.log(_state);
     setLoading(true);
 
     try {
-      const citiesRes = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/geo_admin2/?geo_admin_1=${_state.id}&&country=${formData.country.id}`,
-        {
-          headers: {
-            Authorization: `Token ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      const response = await executeAjaxOperation({
+        url: `/api/geo_admin2/?geo_admin_1=${_state.id}&&country=${formData.country.id}`,
+        token,
+        locale: router.locale,
+      });
 
-      let citiesData = [];
-
-      if (citiesRes.data.length) {
-        citiesData = citiesRes.data.map(
+      setDropdownData((prevState) => ({
+        ...prevState,
+        cities: response.data.map(
           ({ id, geo_admin_2_name, country, geo_admin_1 }) => ({
             name: geo_admin_2_name,
             id,
             country,
             geo_admin_1,
           })
-        );
-      }
-
-      setDropdownData((prevState) => ({
-        ...prevState,
-        cities: citiesData,
+        ),
       }));
     } catch (error) {
       console.error("Error fetching cities data:", error.message);
-      setDropdownData((prevState) => ({
-        ...prevState,
-      }));
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleNewItemAdded = (type, newItem) => {
+    if (type === "error") {
+      toast.error(newItem, { position: "top-center" });
+      return;
+    }
+    toast.success("Record added successfully", { position: "top-center" });
+    setDropdownData((prevState) => {
+      const updatedData = { ...prevState };
+      updatedData[`${type.toLowerCase()}`].push(newItem);
+      return updatedData;
+    });
   };
 
   return (
@@ -317,8 +321,9 @@ export default function CampusForm({ mode, onSubmit, initialData, errors }) {
       className="add-new-record pt-0 row g-2 fv-plugins-bootstrap5 fv-plugins-framework"
       id="form-add-new-record"
     >
+      <Toaster />
       <div className="col-sm-12 fv-plugins-icon-container">
-        <label className="form-label" htmlFor="name">
+        <label className="form-label" htmlFor="campus_name">
           Campus Name
         </label>
         <div className="input-group input-group-merge has-validation">
@@ -327,8 +332,8 @@ export default function CampusForm({ mode, onSubmit, initialData, errors }) {
             id="campus_name"
             className="form-control dt-full-name"
             name="campus_name"
-            placeholder="University of Idaho"
-            aria-label="University of Idaho"
+            placeholder="Campus Name"
+            aria-label="Campus Name"
             value={formData.campus_name}
             onChange={(e) => handleChange("campus_name", e.target.value)}
           />
@@ -339,7 +344,7 @@ export default function CampusForm({ mode, onSubmit, initialData, errors }) {
       </div>
 
       <div className="col-sm-12 fv-plugins-icon-container">
-        <label className="form-label" htmlFor="under_category">
+        <label className="form-label" htmlFor="educational_organization">
           Educational Organization
         </label>
         <div className="input-group input-group-merge has-validation">
@@ -370,8 +375,9 @@ export default function CampusForm({ mode, onSubmit, initialData, errors }) {
               name: formData.country?.name,
               code: formData.country?.code,
             }}
-            onValueChange={(value) => onCountrySelect(value)}
-            type={"Country"}
+            onValueChange={onCountrySelect}
+            onNewItemAdded={handleNewItemAdded}
+            type="Country"
           />
           {errors?.country && (
             <div className="invalid-feedback d-block">{errors.country}</div>
@@ -387,10 +393,15 @@ export default function CampusForm({ mode, onSubmit, initialData, errors }) {
           <div className="input-group input-group-merge has-validation">
             <ComboBoxFreeSolo
               data={dropdownData.states}
-              defaultValue={formData.geo_admin_1}
-              onValueChange={(value) => onStateSelect(value)}
-              type={"State"}
+              defaultValue={{
+                id: formData.geo_admin_1?.id,
+                name: formData.geo_admin_1?.name,
+                code: formData.geo_admin_1?.code,
+              }}
               country={formData.country?.id}
+              onValueChange={onStateSelect}
+              onNewItemAdded={handleNewItemAdded}
+              type="State"
             />
             {errors?.geo_admin_1 && (
               <div className="invalid-feedback d-block">
@@ -409,9 +420,13 @@ export default function CampusForm({ mode, onSubmit, initialData, errors }) {
           <div className="input-group input-group-merge has-validation">
             <ComboBoxFreeSolo
               data={dropdownData.cities}
-              defaultValue={formData.geo_admin_2}
+              defaultValue={{
+                id: formData.geo_admin_2?.id,
+                name: formData.geo_admin_2?.name,
+              }}
               onValueChange={(value) => handleChange("geo_admin_2", value)}
-              type={"City"}
+              onNewItemAdded={handleNewItemAdded}
+              type="City"
               country={formData.country?.id}
               geo_admin_1={formData.geo_admin_1?.id}
             />
@@ -474,9 +489,7 @@ export default function CampusForm({ mode, onSubmit, initialData, errors }) {
         <button
           type="reset"
           className="btn btn-outline-secondary btn-sm"
-          data-bs-dismiss="offcanvas"
-          aria-label="Close"
-          // onClick={resetForm}
+          onClick={resetForm}
         >
           Cancel
         </button>

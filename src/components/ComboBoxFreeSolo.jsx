@@ -98,8 +98,18 @@ export default function ComboBoxFreeSolo({
               code: res.data.description,
             };
             break;
-          default:
+          case "City":
             newType = "cities";
+            newItem = {
+              id: res.data.id,
+              name: res.data.geo_admin_2_name,
+              code: res.data.geo_admin_2_code,
+              country: res.data.country,
+              geo_admin_1: res.data.geo_admin_1,
+            };
+            break;
+          default:
+            newType = "items";
             newItem = {
               id: res.data.id,
               name: res.data.name,
@@ -112,7 +122,7 @@ export default function ComboBoxFreeSolo({
         setDialogValue({ name: "", code: "" });
         setOpen(false);
       } else {
-        onNewItemAdded("error", "Record with the name already exist");
+        onNewItemAdded("error", "Record with the name already exists");
       }
     } catch (error) {
       console.log(error);

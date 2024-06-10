@@ -8,6 +8,8 @@ import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import axios from "axios";
 import CampusForm from "@/components/CampusForm";
+import { executeAjaxOperation } from "@/utils/fetcher";
+import CustomAlert from "@/utils/CustomAlert";
 
 export default function CampusList() {
   const [campuses, setCampuses] = useState([]);
@@ -53,10 +55,16 @@ export default function CampusList() {
 
   const fetchCampuses = async () => {
     try {
-      const campusResponse = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/campus/`,
-        { headers: { Authorization: `Token ${token}` } }
-      );
+      const campusResponse = await executeAjaxOperation({
+        url: `/api/campus/`,
+        token: getToken(),
+        locale: router.locale,
+      });
+
+      if (!campusResponse.success) {
+        throw new Error(campusResponse.error || "Failed to fetch campuses");
+      }
+
       setCampuses(campusResponse.data);
 
       const countryIds = [
@@ -79,53 +87,55 @@ export default function CampusList() {
         geoAdmin1Response,
         geoAdmin2Response,
         eduOrgResponse,
-      ] = await Promise.allSettled([
-        Promise.allSettled(
+      ] = await Promise.all([
+        Promise.all(
           countryIds.map((id) =>
-            axios.get(
-              `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/countries/${id}/`,
-              { headers: { Authorization: `Token ${token}` } }
-            )
+            executeAjaxOperation({
+              url: `/api/countries/${id}/`,
+              token: getToken(),
+              locale: router.locale,
+            })
           )
         ),
-        Promise.allSettled(
+        Promise.all(
           geoAdminIds1.map((id) =>
-            axios.get(
-              `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/geo_admin1/${id}/`,
-              { headers: { Authorization: `Token ${token}` } }
-            )
+            executeAjaxOperation({
+              url: `/api/geo_admin1/${id}/`,
+              token: getToken(),
+              locale: router.locale,
+            })
           )
         ),
-        Promise.allSettled(
+        Promise.all(
           geoAdminIds2.map((id) =>
-            axios.get(
-              `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/geo_admin2/${id}/`,
-              { headers: { Authorization: `Token ${token}` } }
-            )
+            executeAjaxOperation({
+              url: `/api/geo_admin2/${id}/`,
+              token: getToken(),
+              locale: router.locale,
+            })
           )
         ),
-        Promise.allSettled(
+        Promise.all(
           eduOrgIds.map((id) =>
-            axios.get(
-              `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/educational_organizations/${id}/`,
-              { headers: { Authorization: `Token ${token}` } }
-            )
+            executeAjaxOperation({
+              url: `/api/educational_organizations/${id}/`,
+              token: getToken(),
+              locale: router.locale,
+            })
           )
         ),
       ]);
 
-      console.log(eduOrgResponse);
-
       const processResponses = (responses) => {
         return responses.map((res) =>
-          res.status === "fulfilled" ? res.value.data : { name: "null" }
+          res.success ? res.data : { name: "null" }
         );
       };
 
-      const countriesData = processResponses(countriesResponse.value);
-      const geoAdmins1Data = processResponses(geoAdmin1Response.value);
-      const geoAdmins2Data = processResponses(geoAdmin2Response.value);
-      const eduOrgsData = processResponses(eduOrgResponse.value);
+      const countriesData = processResponses(countriesResponse);
+      const geoAdmins1Data = processResponses(geoAdmin1Response);
+      const geoAdmins2Data = processResponses(geoAdmin2Response);
+      const eduOrgsData = processResponses(eduOrgResponse);
 
       const countries = Object.fromEntries(
         countryIds.map((id, index) => [id, countriesData[index]])
@@ -161,21 +171,24 @@ export default function CampusList() {
   const deleteCampus = async (id) => {
     if (confirm("Are you sure you want to delete this campus?")) {
       try {
-        const response = await axios.delete(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/campus/${id}/`,
-          { headers: { Authorization: `Token ${token}` } }
-        );
+        const response = await executeAjaxOperation({
+          url: `/api/campus/${id}/`,
+          method: "DELETE",
+          token: getToken(),
+          locale: router.locale,
+        });
 
-        if (response.status === 204) {
+        if (response.success) {
           setCampuses((prevCampuses) =>
             prevCampuses.filter((campus) => campus.id !== id)
           );
           setSuccessMessage("Campus deleted successfully");
         } else {
-          setErrorMessage("Failed to delete Campus");
+          setErrorMessage(response.error || "Failed to delete Campus");
         }
       } catch (error) {
-        setErrorMessage(error.message);
+        console.error("Error deleting campus:", error);
+        setErrorMessage("An error occurred while deleting the campus.");
       }
     }
   };
@@ -183,39 +196,40 @@ export default function CampusList() {
   const handleFormSubmit = async (data) => {
     const url =
       formMode === "create"
-        ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/campus/`
-        : `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/campus/${selectedCampus.id}/`;
+        ? `/api/campus/`
+        : `/api/campus/${selectedCampus.id}/`;
     const method = formMode === "create" ? "POST" : "PUT";
 
     try {
-      const response = await axios({
+      const response = await executeAjaxOperation({
         url,
         method,
-        headers: { Authorization: `Token ${token}` },
+        token: getToken(),
         data,
+        locale: router.locale,
       });
 
-      if ([200, 201].includes(response.status)) {
+      if (response.success) {
         setSuccessMessage(
           formMode === "create"
             ? "Campus created successfully"
             : "Campus updated successfully"
         );
         fetchCampuses();
-        bootstrap.Offcanvas.getInstance(
-          document.getElementById("add-new-record")
-        ).hide();
+        const offcanvasElement = document.getElementById("add-new-record");
+        const offcanvasInstance =
+          bootstrap.Offcanvas.getInstance(offcanvasElement);
+        if (offcanvasInstance) {
+          offcanvasInstance.hide();
+        }
         setFormErrors({});
       } else {
-        throw new Error("An error occurred. Please try again.");
+        setFormErrors(response.error);
+        setErrorMessage("Validation Failed");
       }
     } catch (error) {
-      if (error.response?.status === 400) {
-        setFormErrors(error.response.data);
-        setErrorMessage("Validation Failed");
-      } else {
-        setErrorMessage(error.message);
-      }
+      console.error("Error:", error);
+      setErrorMessage(error.message);
     }
   };
 
@@ -337,14 +351,22 @@ export default function CampusList() {
 
         <div className="card-body">
           {successMessage && (
-            <div className="alert alert-success" role="alert">
-              {successMessage}
-            </div>
+            <CustomAlert
+              message={successMessage}
+              dismissable
+              type="success"
+              onClose={() => setSuccessMessage("")}
+              timer={1500}
+            />
           )}
           {errorMessage && (
-            <div className="alert alert-danger" role="alert">
-              {errorMessage}
-            </div>
+            <CustomAlert
+              message={errorMessage}
+              dismissable
+              type="danger"
+              onClose={() => setErrorMessage("")}
+              timer={1500}
+            />
           )}
 
           <div className="table-responsive text-nowrap">

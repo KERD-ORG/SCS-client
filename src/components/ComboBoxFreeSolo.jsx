@@ -10,7 +10,7 @@ import {
   Button,
 } from "@mui/material";
 import toast, { Toaster } from "react-hot-toast";
-import axios from "axios";
+import { executeAjaxOperation } from "@/utils/fetcher";
 import { getToken } from "@/utils/auth";
 
 const filter = createFilterOptions();
@@ -20,6 +20,7 @@ export default function ComboBoxFreeSolo({
   type = "Country",
   data,
   onValueChange,
+  onNewItemAdded,
   ...restProps
 }) {
   const [open, setOpen] = useState(false);
@@ -28,14 +29,14 @@ export default function ComboBoxFreeSolo({
   const handleSubmit = async (event) => {
     event.preventDefault();
     if (!dialogValue.name || !dialogValue.code) {
-      return toast.error("Fill all the fields", { position: "top-center" });
+      return onNewItemAdded("error", "Fill all the fields");
     }
 
     const urlMap = {
-      Country: `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/countries/`,
-      State: `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/geo_admin1/`,
-      City: `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/geo_admin2/`,
-      Category: `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/under_category/`,
+      Country: `/api/countries/`,
+      State: `/api/geo_admin1/`,
+      City: `/api/geo_admin2/`,
+      Category: `/api/under_category/`,
     };
 
     const dataMap = {
@@ -61,16 +62,61 @@ export default function ComboBoxFreeSolo({
     };
 
     try {
-      const res = await axios.post(urlMap[type], dataMap[type], {
-        headers: {
-          Authorization: `Token ${getToken()}`,
-          "Content-Type": "application/json",
-        },
+      const res = await executeAjaxOperation({
+        url: urlMap[type],
+        method: "POST",
+        token: getToken(),
+        data: dataMap[type],
       });
-      window.location.reload();
+
+      if (res.success) {
+        // Format the new item correctly based on the type
+        let newType = "";
+        let newItem = {};
+        switch (type) {
+          case "Country":
+            newType = "countries";
+            newItem = {
+              id: res.data.id,
+              name: res.data.country_name,
+              code: res.data.country_code,
+            };
+            break;
+          case "State":
+            newType = "states";
+            newItem = {
+              id: res.data.id,
+              name: res.data.geo_admin_1_name,
+              code: res.data.geo_admin_1_code,
+            };
+            break;
+          case "Category":
+            newType = "categories";
+            newItem = {
+              id: res.data.id,
+              name: res.data.name,
+              code: res.data.description,
+            };
+            break;
+          default:
+            newType = "cities";
+            newItem = {
+              id: res.data.id,
+              name: res.data.name,
+              code: res.data.code,
+            };
+            break;
+        }
+
+        onNewItemAdded(newType, newItem);
+        setDialogValue({ name: "", code: "" });
+        setOpen(false);
+      } else {
+        onNewItemAdded("error", "Record with the name already exist");
+      }
     } catch (error) {
       console.log(error);
-      toast.error(error.message);
+      onNewItemAdded("error", error.message);
     }
   };
 
@@ -123,7 +169,6 @@ export default function ComboBoxFreeSolo({
       />
       <Dialog open={open} onClose={() => setOpen(false)} disablePortal>
         <form>
-          <Toaster />
           <DialogTitle>Add a new {type}</DialogTitle>
           <DialogContent>
             <TextField

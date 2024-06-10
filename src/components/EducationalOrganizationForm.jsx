@@ -2,13 +2,18 @@ import { useState, useEffect } from "react";
 import ComboBoxFreeSolo from "./ComboBoxFreeSolo";
 import { getToken } from "@/utils/auth";
 import axios from "axios";
+import { executeAjaxOperation } from "@/utils/fetcher";
+import { useRouter } from "next/router";
+import toast, { Toaster } from "react-hot-toast";
 
 export default function EducationalOrganizationForm({
   mode,
   onSubmit,
   initialData,
-  errors,
+  errors: error,
 }) {
+  const [errors, setErrors] = useState(error ? { ...error } : {});
+  const router = useRouter();
   const [formData, setFormData] = useState({
     name: "",
     geo_admin_1: { code: "", name: "", id: "" },
@@ -32,36 +37,49 @@ export default function EducationalOrganizationForm({
   useEffect(() => {
     const fetchDropdownData = async () => {
       try {
-        const [countriesRes, categoriesRes] = await Promise.all([
-          axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/countries/`, {
-            headers: { Authorization: `Token ${token}` },
-          }),
-          axios.get(
-            `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/under_category/`,
-            {
-              headers: {
-                Authorization: `Token ${token}`,
-                "Content-Type": "application/json",
-              },
-            }
-          ),
-        ]);
+        // Fetch countries
+        const countriesRes = await executeAjaxOperation({
+          url: `/api/countries/`,
+          token,
+          locale: router.locale,
+        });
 
-        setDropdownData((prevState) => ({
-          ...prevState,
-          countries: countriesRes.data.map(
-            ({ country_code, country_name, id }) => ({
-              code: country_code,
-              name: country_name,
+        // Handle countries response
+        if (countriesRes.success) {
+          setDropdownData((prevState) => ({
+            ...prevState,
+            countries: countriesRes.data.map(
+              ({ country_code, country_name, id }) => ({
+                code: country_code,
+                name: country_name,
+                id,
+              })
+            ),
+          }));
+        } else {
+          toast.error(countriesRes.error);
+        }
+
+        // Fetch categories
+        const categoriesRes = await executeAjaxOperation({
+          url: `/api/under_category/`,
+          token,
+          locale: router.locale,
+        });
+
+        // Handle categories response
+        if (categoriesRes.success) {
+          setDropdownData((prevState) => ({
+            ...prevState,
+            categories: categoriesRes.data.map(({ description, id, name }) => ({
+              name,
+              code: description,
               id,
-            })
-          ),
-          categories: categoriesRes.data.map(({ description, id, name }) => ({
-            name,
-            code: description,
-            id,
-          })),
-        }));
+            })),
+          }));
+        } else {
+          toast.error(categoriesRes.error);
+        }
       } catch (error) {
         console.error("Error fetching dropdown data:", error);
       }
@@ -75,19 +93,21 @@ export default function EducationalOrganizationForm({
       const loadInitialData = async () => {
         try {
           const [stateRes, categoryRes] = await Promise.allSettled([
-            axios.get(
-              `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/geo_admin1/?country=${initialData.country}`,
-              { headers: { Authorization: `Token ${token}` } }
-            ),
-            axios.get(
-              `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/under_category/${initialData.under_category}/`,
-              { headers: { Authorization: `Token ${token}` } }
-            ),
+            executeAjaxOperation({
+              url: `/api/geo_admin1/?country=${initialData.country}`,
+              token,
+              locale: router.locale,
+            }),
+            executeAjaxOperation({
+              url: `/api/under_category/${initialData.under_category}/`,
+              token,
+              locale: router.locale,
+            }),
           ]);
 
           const updatedDropdownData = { ...dropdownData };
 
-          if (stateRes.status === "fulfilled") {
+          if (stateRes.status === "fulfilled" && stateRes.value.success) {
             updatedDropdownData.states = stateRes.value.data.map(
               ({ geo_admin_1_code, geo_admin_1_name, id }) => ({
                 code: geo_admin_1_code,
@@ -99,7 +119,7 @@ export default function EducationalOrganizationForm({
 
           let tempCat = { id: "", name: "", code: "" };
 
-          if (categoryRes.status === "fulfilled") {
+          if (categoryRes.status === "fulfilled" && categoryRes.value.success) {
             tempCat = categoryRes.value.data;
           }
 
@@ -152,17 +172,25 @@ export default function EducationalOrganizationForm({
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    const { name, country, geo_admin_1, under_category, status, statement } =
-      formData;
+    const { name, country, geo_admin_1, under_category, status } = formData;
 
-    if (
-      !name ||
-      !country.id ||
-      !geo_admin_1.id ||
-      !under_category.id ||
-      !statement
-    ) {
-      alert("Fill all the required fields");
+    const err = {};
+
+    // Validation check for required fields
+    if (!name) {
+      err.name = ["Name is required"];
+    }
+    if (!country || !country.id) {
+      err.country = ["Country is required"];
+    }
+    if (!geo_admin_1 || !geo_admin_1.id) {
+      err.geo_admin_1 = ["State/Province is required"];
+    }
+    if (!under_category || !under_category.id) {
+      err.under_category = ["Category is required"];
+    }
+    if (Object.keys(err).length > 0) {
+      setErrors(err);
       return;
     }
 
@@ -177,28 +205,24 @@ export default function EducationalOrganizationForm({
 
     submissionData.set("status", status === "active");
 
-    for (let [key, value] of submissionData.entries()) {
-      console.log(key, value);
-    }
-
     onSubmit(submissionData);
     // resetForm();
   };
 
   const onCountrySelect = async (_country) => {
-    handleChange("country", _country);
+    setFormData({
+      ...formData,
+      country: _country,
+      geo_admin_1: { code: "", name: "", id: "" },
+    });
     setLoading(true);
 
     try {
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/geo_admin1/?country=${_country.id}`,
-        {
-          headers: {
-            Authorization: `Token ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      const response = await executeAjaxOperation({
+        url: `/api/geo_admin1/?country=${_country.id}`,
+        token,
+        locale: router.locale,
+      });
 
       setDropdownData((prevState) => ({
         ...prevState,
@@ -217,12 +241,26 @@ export default function EducationalOrganizationForm({
     }
   };
 
+  const handleNewItemAdded = (type, newItem) => {
+    if (type === "error") {
+      toast.error(newItem, { position: "top-center" });
+      return;
+    }
+    toast.success("Record added successfully", { position: "top-center" });
+    setDropdownData((prevState) => {
+      const updatedData = { ...prevState };
+      updatedData[`${type.toLowerCase()}`].push(newItem);
+      return updatedData;
+    });
+  };
+
   return (
     <form
       onSubmit={handleSubmit}
       className="add-new-record pt-0 row g-2 fv-plugins-bootstrap5 fv-plugins-framework"
       id="form-add-new-record"
     >
+      <Toaster />
       <div className="col-sm-12 fv-plugins-icon-container">
         <label className="form-label" htmlFor="name">
           Organization Name
@@ -257,6 +295,7 @@ export default function EducationalOrganizationForm({
               code: formData.under_category?.code,
             }}
             onValueChange={(value) => handleChange("under_category", value)}
+            onNewItemAdded={handleNewItemAdded}
             type="Category"
           />
           {errors?.under_category && (
@@ -280,6 +319,7 @@ export default function EducationalOrganizationForm({
               code: formData.country?.code,
             }}
             onValueChange={onCountrySelect}
+            onNewItemAdded={handleNewItemAdded}
             type="Country"
           />
           {errors?.country && (
@@ -301,8 +341,9 @@ export default function EducationalOrganizationForm({
                 name: formData.geo_admin_1?.name,
                 code: formData.geo_admin_1?.code,
               }}
-              primary_key={formData.country?.id}
+              country={formData.country?.id}
               onValueChange={(value) => handleChange("geo_admin_1", value)}
+              onNewItemAdded={handleNewItemAdded}
               type="State"
             />
             {errors?.geo_admin_1 && (

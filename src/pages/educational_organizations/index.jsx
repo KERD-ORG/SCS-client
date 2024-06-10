@@ -1,4 +1,4 @@
-// src/pages/about.js
+// src/pages/index.js
 import React from "react";
 import Head from "next/head";
 import Layout from "../../components/layout";
@@ -11,6 +11,8 @@ import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import axios from "axios";
 import EducationalOrganizationForm from "@/components/EducationalOrganizationForm";
+import { executeAjaxOperation } from "@/utils/fetcher";
+import CustomAlert from "@/utils/CustomAlert";
 
 export default function EducationalOrganizationList() {
   const [universities, setUniversities] = useState([]);
@@ -55,83 +57,95 @@ export default function EducationalOrganizationList() {
 
   const fetchUniversities = async () => {
     try {
-      const universityResponse = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/educational_organizations/`,
-        {
-          headers: {
-            Authorization: `Token ${token}`,
-          },
-        }
-      );
-      setUniversities(universityResponse.data);
+      const universityResponse = await executeAjaxOperation({
+        url: `/api/educational_organizations/`,
+        token: getToken(),
+        locale: router.locale,
+      });
 
-      const countryIds = [
-        ...new Set(
-          universityResponse.data.map((university) => university.country)
-        ),
-      ];
-      const geoAdminIds = [
-        ...new Set(
-          universityResponse.data.map((university) => university.geo_admin_1)
-        ),
-      ];
-      const categoriesIds = [
-        ...new Set(
-          universityResponse.data.map((university) => university.under_category)
-        ),
-      ];
+      if (universityResponse.success) {
+        setUniversities(universityResponse.data);
 
-      const [countryResponses, geoAdminResponses, categoryResponses] =
-        await Promise.allSettled([
-          Promise.allSettled(
-            countryIds.map((id) =>
-              axios.get(
-                `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/countries/${id}/`,
-                { headers: { Authorization: `Token ${token}` } }
-              )
+        const countryIds = [
+          ...new Set(
+            universityResponse.data.map((university) => university.country)
+          ),
+        ];
+        const geoAdminIds = [
+          ...new Set(
+            universityResponse.data.map((university) => university.geo_admin_1)
+          ),
+        ];
+        const categoriesIds = [
+          ...new Set(
+            universityResponse.data.map(
+              (university) => university.under_category
             )
           ),
-          Promise.allSettled(
-            geoAdminIds.map((id) =>
-              axios.get(
-                `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/geo_admin1/${id}/`,
-                { headers: { Authorization: `Token ${token}` } }
-              )
-            )
-          ),
-          Promise.allSettled(
-            categoriesIds.map((id) =>
-              axios.get(
-                `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/under_category/${id}/`,
-                { headers: { Authorization: `Token ${token}` } }
-              )
-            )
-          ),
-        ]);
+        ];
 
-      const processResponses = (responses) => {
-        return responses.map((res) =>
-          res.status === "fulfilled" ? res.value.data : { name: "null" }
+        const [countryResponses, geoAdminResponses, categoryResponses] =
+          await Promise.allSettled([
+            Promise.allSettled(
+              countryIds.map((id) =>
+                executeAjaxOperation({
+                  url: `/api/countries/${id}/`,
+                  token: getToken(),
+                  locale: router.locale,
+                })
+              )
+            ),
+            Promise.allSettled(
+              geoAdminIds.map((id) =>
+                executeAjaxOperation({
+                  url: `/api/geo_admin1/${id}/`,
+                  token: getToken(),
+                  locale: router.locale,
+                })
+              )
+            ),
+            Promise.allSettled(
+              categoriesIds.map((id) =>
+                executeAjaxOperation({
+                  url: `/api/under_category/${id}/`,
+                  token: getToken(),
+                  locale: router.locale,
+                })
+              )
+            ),
+          ]);
+
+        const processResponses = (responses) => {
+          return responses.map((res) =>
+            res.status === "fulfilled" && res.value.success
+              ? res.value.data
+              : { name: "null" }
+          );
+        };
+
+        const countriesData = processResponses(countryResponses.value);
+        const geoAdminsData = processResponses(geoAdminResponses.value);
+        const categoriesData = processResponses(categoryResponses.value);
+
+        const countries = Object.fromEntries(
+          countryIds.map((id, index) => [id, countriesData[index]])
         );
-      };
+        const geoAdmins = Object.fromEntries(
+          geoAdminIds.map((id, index) => [id, geoAdminsData[index]])
+        );
+        const categories = Object.fromEntries(
+          categoriesIds.map((id, index) => [id, categoriesData[index]])
+        );
 
-      const countriesData = processResponses(countryResponses.value);
-      const geoAdminsData = processResponses(geoAdminResponses.value);
-      const categoriesData = processResponses(categoryResponses.value);
-
-      const countries = Object.fromEntries(
-        countryIds.map((id, index) => [id, countriesData[index]])
-      );
-      const geoAdmins = Object.fromEntries(
-        geoAdminIds.map((id, index) => [id, geoAdminsData[index]])
-      );
-      const categories = Object.fromEntries(
-        categoriesIds.map((id, index) => [id, categoriesData[index]])
-      );
-
-      setCountries(countries);
-      setGeoAdmins(geoAdmins);
-      setCategories(categories);
+        setCountries(countries);
+        setGeoAdmins(geoAdmins);
+        setCategories(categories);
+      } else {
+        console.error(
+          "Failed to fetch universities data:",
+          universityResponse.error
+        );
+      }
     } catch (error) {
       console.error("Error fetching data:", error);
     }
@@ -152,26 +166,22 @@ export default function EducationalOrganizationList() {
 
     if (isConfirmed) {
       try {
-        const token = getToken();
-        const response = await axios.delete(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/educational_organizations/${id}/`,
-          {
-            headers: {
-              Authorization: `Token ${token}`,
-            },
-            withCredentials: true,
-          }
-        );
+        const response = await executeAjaxOperation({
+          url: `/api/educational_organizations/${id}/`,
+          method: "DELETE",
+          token: getToken(),
+          locale: router.locale,
+        });
 
-        if (response.status === 204) {
-          // 204 No Content indicates successful deletion
+        if (response.success) {
           setUniversities((prevUniversities) =>
             prevUniversities.filter((uni) => uni.id !== id)
           );
           setSuccessMessage("Educational organization deleted successfully");
         } else {
-          console.error("Failed to delete educational organization");
-          setErrorMessage("Failed to delete educational organization");
+          setErrorMessage(
+            response.error || "Failed to delete educational organization"
+          );
         }
       } catch (error) {
         console.error("Error:", error);
@@ -185,22 +195,20 @@ export default function EducationalOrganizationList() {
   const handleFormSubmit = async (data) => {
     const url =
       formMode === "create"
-        ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/educational_organizations/`
-        : `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/educational_organizations/${selectedUniversity.id}/`;
+        ? `/api/educational_organizations/`
+        : `/api/educational_organizations/${selectedUniversity.id}/`;
     const method = formMode === "create" ? "POST" : "PUT";
 
     try {
-      const response = await axios({
+      const response = await executeAjaxOperation({
         url,
         method,
-        headers: {
-          Authorization: `Token ${getToken()}`,
-          "Content-Type": "application/json", // If data is JSON, otherwise adjust as needed
-        },
+        token: getToken(),
         data,
+        locale: router.locale,
       });
 
-      if (response.status === 200 || response.status === 201) {
+      if (response.success) {
         setSuccessMessage(
           formMode === "create"
             ? "Educational organization created successfully"
@@ -215,14 +223,12 @@ export default function EducationalOrganizationList() {
         }
         setFormErrors({});
       } else {
-        throw new Error("An error occurred. Please try again.");
+        setFormErrors(response.error);
+        setErrorMessage("Validation Failed");
       }
     } catch (error) {
       console.error("Error:", error);
-      if (error.response.status === 400) {
-        setFormErrors(error.response.data);
-        setErrorMessage("Validation Failed");
-      } else setErrorMessage(error.message);
+      setErrorMessage(error.message);
     }
   };
 
@@ -321,7 +327,7 @@ export default function EducationalOrganizationList() {
                 {viewUniversity.name}
               </li>
               <li className="list-group-item d-flex align-items-center">
-                {viewUniversity.description}
+                {viewUniversity.statement}
               </li>
             </ul>
           ) : (
@@ -357,14 +363,22 @@ export default function EducationalOrganizationList() {
 
         <div className="card-body">
           {successMessage && (
-            <div className="alert alert-success" role="alert">
-              {successMessage}
-            </div>
+            <CustomAlert
+              message={successMessage}
+              dismissable
+              type="success"
+              onClose={() => setSuccessMessage("")}
+              timer={1500}
+            />
           )}
           {errorMessage && (
-            <div className="alert alert-danger" role="alert">
-              {errorMessage}
-            </div>
+            <CustomAlert
+              message={errorMessage}
+              dismissable
+              type="danger"
+              onClose={() => setErrorMessage("")}
+              timer={1500}
+            />
           )}
 
           <div className="table-responsive text-nowrap">

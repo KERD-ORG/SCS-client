@@ -1,7 +1,6 @@
 import { useUserPermissions } from "../contexts/UserPermissionsContext";
 import { useRouter } from "next/router";
 import { useTranslation } from "next-i18next";
-import Link from "next/link";
 
 function Menu() {
   const router = useRouter();
@@ -15,11 +14,18 @@ function Menu() {
     );
 
   // Check if the user has the "view_campus" permission
-  
+
   const canViewCampuses =
     Array.isArray(permissions) &&
     permissions.some((permission) => permission.codename === "view_campus");
-  
+
+  // Check if the user has the "view_university" permission
+  const canViewUniversities =
+    Array.isArray(permissions) &&
+    permissions.some((permission) => permission.codename === "view_university");
+  const canViewUsers =
+    Array.isArray(permissions) &&
+    permissions.some((permission) => permission.codename === "view_user");
 
   const isActive = (pathname) => router.pathname === pathname;
 
@@ -36,7 +42,7 @@ function Menu() {
       className="layout-menu menu-vertical menu bg-menu-theme"
     >
       <div className="app-brand demo ">
-        <a href="/" className="app-brand-link">
+        <a href={localizedPath("/")} className="app-brand-link">
           <span className="app-brand-logo demo">
             <svg
               width={25}
@@ -133,6 +139,24 @@ function Menu() {
             <div>{t("Dashboard")}</div>
           </a>
         </li>
+        {canViewUniversities && (
+          <li
+            className={`menu-item ${isActive("/universities") ? "active" : ""}`}
+          >
+            <a href={localizedPath("/universities")} className="menu-link">
+              <i className="menu-icon tf-icons bx bxs-school" />
+              <div>{t("Universities")}</div>
+            </a>
+          </li>
+        )}
+        {canViewUsers && (
+          <li className={`menu-item ${isActive("/users") ? "active" : ""}`}>
+            <a href={localizedPath("/users")} className="menu-link">
+              <i className="menu-icon tf-icons bx bx-user" />
+              <div>{t("Users")}</div>
+            </a>
+          </li>
+        )}
         {canViewEducationalOrganizations && (
           <li
             className={`menu-item ${

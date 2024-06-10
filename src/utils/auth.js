@@ -7,6 +7,7 @@ export function isLoggedIn() {
 
 export function logout() {
     Cookies.remove('token');
+    window.location.reload();
 }
 
 export function getToken() {

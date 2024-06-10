@@ -1,5 +1,5 @@
 // utils/withAuthServerSideProps.js
-import { parse } from "cookie"; // Correctly import parse
+import { parse } from 'cookie'; // Correctly import parse
 
 export function withAuthServerSideProps(getServerSidePropsFunc) {
   return async (context) => {
@@ -14,7 +14,7 @@ export function withAuthServerSideProps(getServerSidePropsFunc) {
       // Redirect to login page if not logged in
       return {
         redirect: {
-          destination: "/signin", // Adjust the sign-in path as needed
+          destination: '/signin', // Adjust the sign-in path as needed
           permanent: false,
         },
       };

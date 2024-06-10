@@ -1,47 +1,70 @@
-import { appWithTranslation } from "next-i18next";
-import nextI18NextConfig from "../../next-i18next.config.js";
-import { useEffect } from "react";
-import { UserPermissionsProvider } from "../contexts/UserPermissionsContext";
+import { appWithTranslation } from 'next-i18next';
+import nextI18NextConfig from '../../next-i18next.config.js';
+import { useEffect } from 'react';
+import { UserPermissionsProvider } from '../contexts/UserPermissionsContext';
+import useIdleLogout from '../hooks/useIdleLogout';
+import { GoogleReCaptchaProvider } from "react-google-recaptcha-v3";
 
-import "./../styles/vendor/fonts/boxicons.css";
-import "./../styles/vendor/css/core.css";
-import "./../styles/vendor/css/theme-default.css";
-import "./../styles/css/demo.css";
-import "./../styles/vendor/css/pages/page-auth.css";
-import "./../styles/vendor/libs/nouislider/nouislider.css";
-import "./../styles/vendor/libs/swiper/swiper.css";
-
-import "./../styles/vendor/libs/typeahead-js/typeahead.css";
-import "./../styles/vendor/libs/apex-charts/apex-charts.css";
-import { Toaster } from "react-hot-toast";
+import './../styles/vendor/fonts/boxicons.css';
+import './../styles/vendor/css/core.css';
+import './../styles/vendor/css/theme-default.css';
+import './../styles/css/demo.css';
+import './../styles/vendor/css/pages/page-auth.css';
+import './../styles/vendor/libs/nouislider/nouislider.css';
+import './../styles/vendor/libs/swiper/swiper.css';
+import './../styles/vendor/libs/typeahead-js/typeahead.css';
+import './../styles/vendor/libs/apex-charts/apex-charts.css';
 
 function App({ Component, pageProps }) {
-  useEffect(() => {
-    const loadAdditionalStyles = async () => {
-      if (Component.layout === "auth") {
-        await import("./../styles/vendor/css/core.css");
-        await import("./../styles/vendor/css/theme-default.css");
-      }
-      if (Component.layout === "landing") {
-        await import("./../styles/vendor/css/pages/front-page.css");
-        await import("./../styles/vendor/css/pages/front-page-landing.css");
-      }
-      if (Component.layout === "default") {
-        await import("./../styles/vendor/css/rtl/core.css");
-        await import("./../styles/vendor/css/rtl/theme-default.css");
-      }
-      // await import("bootstrap/dist/js/bootstrap.bundle.js");
-    };
+    const autoLogoutDuration = parseInt(process.env.NEXT_PUBLIC_AUTO_LOGOUT_DURATION) || 60000; // Default to 1 minute if not set
 
-    loadAdditionalStyles();
-  }, [Component.layout]);
+    useIdleLogout(autoLogoutDuration);
 
-  return (
-    <UserPermissionsProvider>
-      <Toaster position="top-right" reverseOrder={false} />
-      <Component {...pageProps} />
-    </UserPermissionsProvider>
-  );
+    useEffect(() => {
+        const loadAdditionalStyles = async () => {
+            if (Component.layout === 'auth') {
+                await import('./../styles/vendor/css/core.css');
+                await import('./../styles/vendor/css/theme-default.css');
+            }
+            if (Component.layout === 'landing') {
+                await import('./../styles/vendor/css/pages/front-page.css');
+                await import('./../styles/vendor/css/pages/front-page-landing.css');
+            }
+            if (Component.layout === 'default') {
+                await import('./../styles/vendor/css/rtl/core.css');
+                await import('./../styles/vendor/css/rtl/theme-default.css');
+            }
+        };
+
+        loadAdditionalStyles();
+    }, [Component.layout]);
+
+    // Check if the page requires reCAPTCHA
+    const requiresReCaptcha = Component.requiresReCaptcha;
+
+    return (
+        <>
+            {requiresReCaptcha ? (
+                <GoogleReCaptchaProvider
+                    reCaptchaKey="6LcyjOYpAAAAAHeyHKxR65uQo21svO0cW0CAaIH7"
+                    scriptProps={{
+                        async: false,
+                        defer: false,
+                        appendTo: "head",
+                        nonce: undefined,
+                    }}
+                >
+                    <UserPermissionsProvider>
+                        <Component {...pageProps} />
+                    </UserPermissionsProvider>
+                </GoogleReCaptchaProvider>
+            ) : (
+                <UserPermissionsProvider>
+                    <Component {...pageProps} key={Component.layout || ''} />
+                </UserPermissionsProvider>
+            )}
+        </>
+    );
 }
 
 export default appWithTranslation(App, nextI18NextConfig);

@@ -25,7 +25,11 @@
     "react-bootstrap": "^2.10.2",
     "react-dom": "^18",
     "react-hot-toast": "^2.4.1",
-    "react-i18next": "^14.1.2"
+    "react-i18next": "^14.1.2",
+    "react-google-recaptcha": "^3.1.0",
+    "react-google-recaptcha-v3": "^1.10.1",
+    "react-router-dom": "^6.23.1",
+    "react-select": "^5.8.0"
   },
   "devDependencies": {
     "@babel/preset-env": "^7.24.3",

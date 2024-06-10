@@ -42,12 +42,12 @@ export default function CampusForm({
         // Fetch countries and educational organizations
         const [countriesRes, eduOrgsRes] = await Promise.all([
           executeAjaxOperation({
-            url: `/api/countries/`,
+            url: `${process.env.NEXT_PUBLIC_API_ENDPOINT_COUNTRY}`,
             token,
             locale: router.locale,
           }),
           executeAjaxOperation({
-            url: `/api/educational_organizations/`,
+            url: `${process.env.NEXT_PUBLIC_API_ENDPOINT_EDUCATIONAL_ORAGANIZATION}`,
             token,
             locale: router.locale,
           }),
@@ -95,12 +95,12 @@ export default function CampusForm({
         try {
           const [stateRes, cityRes] = await Promise.allSettled([
             executeAjaxOperation({
-              url: `/api/geo_admin1/?country=${initialData.country}`,
+              url: `${process.env.NEXT_PUBLIC_API_ENDPOINT_GEO_ADMIN_1}?country=${initialData.country}`,
               token,
               locale: router.locale,
             }),
             executeAjaxOperation({
-              url: `/api/geo_admin2/?geo_admin_1=${initialData.geo_admin_1}&&country=${initialData.country}`,
+              url: `${process.env.NEXT_PUBLIC_API_ENDPOINT_GEO_ADMIN_2}?geo_admin_1=${initialData.geo_admin_1}&&country=${initialData.country}`,
               token,
               locale: router.locale,
             }),
@@ -246,7 +246,7 @@ export default function CampusForm({
 
     try {
       const response = await executeAjaxOperation({
-        url: `/api/geo_admin1/?country=${_country.id}`,
+        url: `${process.env.NEXT_PUBLIC_API_ENDPOINT_GEO_ADMIN_1}?country=${_country.id}`,
         token,
         locale: router.locale,
       });
@@ -279,7 +279,7 @@ export default function CampusForm({
 
     try {
       const response = await executeAjaxOperation({
-        url: `/api/geo_admin2/?geo_admin_1=${_state.id}&&country=${formData.country.id}`,
+        url: `${process.env.NEXT_PUBLIC_API_ENDPOINT_GEO_ADMIN_2}?geo_admin_1=${_state.id}&&country=${formData.country.id}`,
         token,
         locale: router.locale,
       });

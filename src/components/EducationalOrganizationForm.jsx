@@ -39,7 +39,7 @@ export default function EducationalOrganizationForm({
       try {
         // Fetch countries
         const countriesRes = await executeAjaxOperation({
-          url: `/api/countries/`,
+          url: `${process.env.NEXT_PUBLIC_API_ENDPOINT_COUNTRY}`,
           token,
           locale: router.locale,
         });
@@ -62,7 +62,7 @@ export default function EducationalOrganizationForm({
 
         // Fetch categories
         const categoriesRes = await executeAjaxOperation({
-          url: `/api/under_category/`,
+          url: `${process.env.NEXT_PUBLIC_API_ENDPOINT_EDUCATIONAL_ORAGANIZATION_CATEGORY}`,
           token,
           locale: router.locale,
         });
@@ -94,12 +94,12 @@ export default function EducationalOrganizationForm({
         try {
           const [stateRes, categoryRes] = await Promise.allSettled([
             executeAjaxOperation({
-              url: `/api/geo_admin1/?country=${initialData.country}`,
+              url: `${process.env.NEXT_PUBLIC_API_ENDPOINT_GEO_ADMIN_1}?country=${initialData.country}`,
               token,
               locale: router.locale,
             }),
             executeAjaxOperation({
-              url: `/api/under_category/${initialData.under_category}/`,
+              url: `${process.env.NEXT_PUBLIC_API_ENDPOINT_EDUCATIONAL_ORAGANIZATION_CATEGORY}${initialData.under_category}/`,
               token,
               locale: router.locale,
             }),
@@ -219,7 +219,7 @@ export default function EducationalOrganizationForm({
 
     try {
       const response = await executeAjaxOperation({
-        url: `/api/geo_admin1/?country=${_country.id}`,
+        url: `${process.env.NEXT_PUBLIC_API_ENDPOINT_GEO_ADMIN_1}?country=${_country.id}`,
         token,
         locale: router.locale,
       });

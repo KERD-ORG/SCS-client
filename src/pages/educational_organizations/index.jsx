@@ -58,7 +58,7 @@ export default function EducationalOrganizationList() {
   const fetchUniversities = async () => {
     try {
       const universityResponse = await executeAjaxOperation({
-        url: `/api/educational_organizations/`,
+        url: `${process.env.NEXT_PUBLIC_API_ENDPOINT_EDUCATIONAL_ORAGANIZATION}`,
         token: getToken(),
         locale: router.locale,
       });
@@ -89,7 +89,7 @@ export default function EducationalOrganizationList() {
             Promise.allSettled(
               countryIds.map((id) =>
                 executeAjaxOperation({
-                  url: `/api/countries/${id}/`,
+                  url: `${process.env.NEXT_PUBLIC_API_ENDPOINT_COUNTRY}${id}/`,
                   token: getToken(),
                   locale: router.locale,
                 })
@@ -98,7 +98,7 @@ export default function EducationalOrganizationList() {
             Promise.allSettled(
               geoAdminIds.map((id) =>
                 executeAjaxOperation({
-                  url: `/api/geo_admin1/${id}/`,
+                  url: `${process.env.NEXT_PUBLIC_API_ENDPOINT_GEO_ADMIN_1}${id}/`,
                   token: getToken(),
                   locale: router.locale,
                 })
@@ -107,7 +107,7 @@ export default function EducationalOrganizationList() {
             Promise.allSettled(
               categoriesIds.map((id) =>
                 executeAjaxOperation({
-                  url: `/api/under_category/${id}/`,
+                  url: `${process.env.NEXT_PUBLIC_API_ENDPOINT_EDUCATIONAL_ORAGANIZATION_CATEGORY}${id}/`,
                   token: getToken(),
                   locale: router.locale,
                 })
@@ -167,7 +167,7 @@ export default function EducationalOrganizationList() {
     if (isConfirmed) {
       try {
         const response = await executeAjaxOperation({
-          url: `/api/educational_organizations/${id}/`,
+          url: `${process.env.NEXT_PUBLIC_API_ENDPOINT_EDUCATIONAL_ORAGANIZATION}${id}/`,
           method: "DELETE",
           token: getToken(),
           locale: router.locale,
@@ -195,8 +195,8 @@ export default function EducationalOrganizationList() {
   const handleFormSubmit = async (data) => {
     const url =
       formMode === "create"
-        ? `/api/educational_organizations/`
-        : `/api/educational_organizations/${selectedUniversity.id}/`;
+        ? `${process.env.NEXT_PUBLIC_API_ENDPOINT_EDUCATIONAL_ORAGANIZATION}`
+        : `${process.env.NEXT_PUBLIC_API_ENDPOINT_EDUCATIONAL_ORAGANIZATION}${selectedUniversity.id}/`;
     const method = formMode === "create" ? "POST" : "PUT";
 
     try {

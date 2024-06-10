@@ -56,7 +56,7 @@ export default function CampusList() {
   const fetchCampuses = async () => {
     try {
       const campusResponse = await executeAjaxOperation({
-        url: `/api/campus/`,
+        url: `${process.env.NEXT_PUBLIC_API_ENDPOINT_CAMPUS}`,
         token: getToken(),
         locale: router.locale,
       });
@@ -172,7 +172,7 @@ export default function CampusList() {
     if (confirm("Are you sure you want to delete this campus?")) {
       try {
         const response = await executeAjaxOperation({
-          url: `/api/campus/${id}/`,
+          url: `${process.env.NEXT_PUBLIC_API_ENDPOINT_CAMPUS}${id}/`,
           method: "DELETE",
           token: getToken(),
           locale: router.locale,
@@ -196,8 +196,8 @@ export default function CampusList() {
   const handleFormSubmit = async (data) => {
     const url =
       formMode === "create"
-        ? `/api/campus/`
-        : `/api/campus/${selectedCampus.id}/`;
+        ? `${process.env.NEXT_PUBLIC_API_ENDPOINT_CAMPUS}`
+        : `${process.env.NEXT_PUBLIC_API_ENDPOINT_CAMPUS}${selectedCampus.id}/`;
     const method = formMode === "create" ? "POST" : "PUT";
 
     try {

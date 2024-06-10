@@ -33,10 +33,10 @@ export default function ComboBoxFreeSolo({
     }
 
     const urlMap = {
-      Country: `/api/countries/`,
-      State: `/api/geo_admin1/`,
-      City: `/api/geo_admin2/`,
-      Category: `/api/under_category/`,
+      Country: `${process.env.NEXT_PUBLIC_API_ENDPOINT_COUNTRY}`,
+      State: `${process.env.NEXT_PUBLIC_API_ENDPOINT_GEO_ADMIN_1}`,
+      City: `${process.env.NEXT_PUBLIC_API_ENDPOINT_GEO_ADMIN_2}`,
+      Category: `${process.env.NEXT_PUBLIC_API_ENDPOINT_EDUCATIONAL_ORAGANIZATION_CATEGORY}`,
     };
 
     const dataMap = {

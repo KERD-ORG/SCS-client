@@ -66,6 +66,7 @@ export default function EducationalOrganizationForm({
           token,
           locale: router.locale,
         });
+        console.log(categoriesRes)
 
         // Handle categories response
         if (categoriesRes.success) {

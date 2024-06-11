@@ -54,11 +54,13 @@ export default function CampusList() {
   }
 
   const fetchCampuses = async () => {
+    console.log(getCsrfToken())
     try {
       const campusResponse = await executeAjaxOperation({
         url: `${process.env.NEXT_PUBLIC_API_ENDPOINT_CAMPUS}`,
         token: getToken(),
         locale: router.locale,
+        // csrfToken: getCsrfToken(),
       });
 
       if (!campusResponse.success) {
@@ -207,6 +209,7 @@ export default function CampusList() {
         token: getToken(),
         data,
         locale: router.locale,
+        // csrfToken: getCsrfToken(),
       });
 
       if (response.success) {
